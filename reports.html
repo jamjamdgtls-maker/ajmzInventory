@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>REPORT — Inventory (AJMZ & Calibrate)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#F5F5F0; --panel:#E6D8C3; --accent:#5D866C; --accent-2:#C2A68C;
+      --ink:#2f3b33; --muted:#6b776f; --line:#d9cbb1; --shadow:rgba(93,134,108,.18);
+      --select:#e9f5ef; --warn:#fff2a6; --danger:#ffb3b3;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);display:flex;height:100vh;overflow:hidden}
+
+    /* Icon vertical nav (match other pages) */
+    .nav-vertical{
+      width:60px;background:#fff;border-right:3px solid var(--accent-2);
+      display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:20px;
+      box-shadow:6px 0 20px var(--shadow);position:fixed;left:0;top:0;bottom:0;z-index:2000;
+    }
+    .nav-item{
+      width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      font-size:22px;cursor:pointer;position:relative;text-decoration:none;color:var(--ink);
+      background:#fff;border:1px solid var(--line);transition:.25s;
+    }
+    .nav-item:hover{background:var(--panel);transform:translateX(2px)}
+    .nav-item.active{background:var(--accent);color:#fff;border:none}
+    .nav-item::after{
+      content:attr(data-label);position:absolute;left:60px;background:#fff;border:1px solid var(--line);
+      padding:4px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 6px 18px var(--shadow);
+      font-size:12px;opacity:0;pointer-events:none;transform:translateY(5px);transition:.2s;
+    }
+    .nav-item:hover::after{opacity:1;transform:translateY(0)}
+
+    .main{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;margin-left:60px;padding:10px}
+
+    /* Top bar */
+    .topbar{display:flex;gap:10px;align-items:center}
+    .tabbtn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font-weight:600}
+    .tabbtn.active{background:var(--accent);color:#fff;border-color:transparent}
+    .spacer{flex:1}
+    .toolbar{display:flex;gap:8px}
+    .btn-sm{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600}
+    .btn-sm:hover{background:#f8f6f0}
+
+    /* Filters panel */
+    .panel{display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px var(--shadow);padding:10px}
+    .head{display:flex;flex-direction:column;gap:6px}
+    .head>#title{font-weight:700;font-size:16px;color:var(--accent)}
+    .filters{display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:10px}
+    .filters .inp{display:flex;flex-direction:column;gap:4px}
+    .filters label{font-size:12px;color:var(--muted)}
+    .filters input,.filters select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px}
+    .filters .chk{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+
+    /* Table */
+    .table-wrap{flex:1 1 auto;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;position:relative}
+    table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+    thead th{position:sticky;top:0;background:var(--panel);text-align:left;padding:8px;border-bottom:1px solid var(--line);z-index:1;cursor:pointer}
+    thead th.sort-asc::after{content:" ▲"}
+    thead th.sort-desc::after{content:" ▼"}
+    tbody td{padding:8px;border-bottom:1px solid #e9dec9;vertical-align:top}
+    tbody tr:hover{background:#faf8f0}
+    tfoot td{position:sticky;bottom:0;background:#e7dbc5;border-top:1px solid var(--line);padding:8px;font-weight:700}
+    .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
+
+    /* Row status color helpers (reuse for rows mode) */
+    tr.zero-out{background:linear-gradient(90deg,#fff,#fff6f6)}
+    tr.warn-10{background:linear-gradient(90deg,#fff,#fffde0)}
+
+    .footerbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:6px 0}
+    .totals{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{background:#fff;border:1px solid var(--line);padding:6px 10px;border-radius:999px}
+    .label{color:var(--muted);margin-right:6px}
+
+    #toast{position:fixed;bottom:12px;right:12px;background:#333;color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:3000}
+  </style>
+</head>
+<body>
+  <!-- Left icon navigation -->
+  <div class="nav-vertical">
+    <a href="index.html"   class="nav-item" data-label="Account">👤</a>
+    <a href="add.html"     class="nav-item" data-label="Add">➕</a>
+    <a href="sell.html"    class="nav-item" data-label="Sell">💎</a>
+    <a href="reports.html" class="nav-item active" data-label="Report">📊</a>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="tabbtn active" data-tab="all">All Inventory</button>
+      <button class="tabbtn" data-tab="ajmz">AJMZ</button>
+      <button class="tabbtn" data-tab="cal">Calibrate</button>
+      <button class="tabbtn" data-tab="party">By Party</button>
+      <!-- NEW: Lots tab -->
+      <button class="tabbtn" data-tab="lot">Lots</button>
+      <div class="spacer"></div>
+      <div class="toolbar">
+        <button class="btn-sm" id="btnExport">Export CSV (filtered)</button>
+        <button class="btn-sm" id="btnPrint">Print</button>
+        <button class="btn-sm" id="btnRefresh">Refresh</button>
+      </div>
+    </div>
+
+    <div class="panel" style="min-height:0;display:flex;flex:1">
+      <div class="head">
+        <div id="title">All Inventory — Remaining, Sold & Amounts</div>
+        <div style="font-size:12px;color:var(--muted)">Data: AJMZ (/stoneamjz & /sellAJMZ) • Calibrate (/stonecalibrate & /sellCalibrate)</div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters" id="filters">
+        <div class="inp"><label>Search (any text)</label><input id="q" placeholder="lot, desc, shape, party, etc."></div>
+        <div class="inp"><label>Stone</label>
+          <select id="fStone">
+            <option value="">All</option>
+            <option value="AJMZ">AJMZ</option>
+            <option value="CAL">Calibrate</option>
+          </select>
+        </div>
+        <div class="inp"><label>Lot</label><input id="fLot" placeholder="e.g. AJMZ 4 or 2/001"></div>
+        <div class="inp"><label>Lot No. / Grade</label><input id="fId2" placeholder="Lot No (AJMZ) / Grade (CAL)"></div>
+        <div class="inp"><label>ADD Date From</label><input type="date" id="fFrom"></div>
+        <div class="inp"><label>ADD Date To</label><input type="date" id="fTo"></div>
+
+        <div class="chk"><input type="checkbox" id="onlyRemain"><label for="onlyRemain">Only items with Remaining &gt; 0</label></div>
+        <div class="chk"><input type="checkbox" id="onlySold"><label for="onlySold">Only items with Sold &gt; 0</label></div>
+        <div class="chk"><input type="checkbox" id="warn10"><label for="warn10">Highlight ≤10% remaining</label></div>
+        <div class="chk"><input type="checkbox" id="zeroOut"><label for="zeroOut">Highlight zero remaining</label></div>
+        <div class="inp"><label>Party (ANY of ADD/SELL)</label><input id="fParty" placeholder="buyer/seller name"></div>
+        <div class="inp"><label>Shape</label><input id="fShape" placeholder="e.g. Round"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table id="tbl">
+          <thead>
+            <!-- default header injects at runtime -->
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="8" class="mono">&nbsp;</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="footerbar">
+        <div class="totals" id="totals">
+          <span class="pill"><span class="label">Rows:</span><span id="tRows">0</span></span>
+          <span class="pill"><span class="label">Orig PCS:</span><span id="tOP">0</span></span>
+          <span class="pill"><span class="label">Orig CTS:</span><span id="tOC">0.00</span></span>
+          <span class="pill"><span class="label">Sold PCS:</span><span id="tSP">0</span></span>
+          <span class="pill"><span class="label">Sold CTS:</span><span id="tSC">0.00</span></span>
+          <span class="pill"><span class="label">Rem PCS:</span><span id="tRP">0</span></span>
+          <span class="pill"><span class="label">Rem CTS:</span><span id="tRC">0.00</span></span>
+          <span class="pill"><span class="label">Sold Amt:</span><span id="tSA">0.00</span></span>
+          <span class="pill"><span class="label">Remain Amt:</span><span id="tRA">0.00</span></span>
+        </div>
+        <div class="pager">
+          <label class="label" for="pageSize">Page size</label>
+          <select id="pageSize">
+            <option>20</option><option>50</option><option selected>100</option><option>200</option>
+          </select>
+          <button class="pagebtn" id="prevPage">Prev</button>
+          <span id="pageInfo" class="label">Page 1 / 1</span>
+          <button class="pagebtn" id="nextPage">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">Saved.</div>
+
+  <script type="module">
+    /* ============================================================
+       Firebase (same config / paths as your existing pages)
+     ============================================================ */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkgQ5BCl8LySoiq5CC-HOWJddnJQQa3jQ",
+      authDomain: "poojainventory-ab7fa.firebaseapp.com",
+      databaseURL: "https://poojainventory-ab7fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "poojainventory-ab7fa",
+      storageBucket: "poojainventory-ab7fa.firebasestorage.app",
+      messagingSenderId: "804100194953",
+      appId: "1:804100194953:web:0af84ea1d53c3dde26bc58"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    /* ============================================================
+       Utilities
+     ============================================================ */
+    const $ = (id)=>document.getElementById(id);
+    function toast(msg){ const t=$("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none",2000); }
+    const keyAJ  = v => `${(v.lot||"").trim()}||${(v.lotno||"").trim()}`;
+    const keyCAL = v => `${(v.lot||"").trim()}||${(v.grade||"").trim()}`;
+    const toNum = v => { const n = parseFloat(v); return isFinite(n)?n:0; };
+    const asDate = s => (s && !isNaN(new Date(s))) ? new Date(s) : null;
+    const fmt2 = n => (isFinite(n)?Number(n).toFixed(2):"");
+    const esc = (s)=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+
+    /* ============================================================
+       Data fetch & aggregation
+       We compute per-key lines combining ADD and SELL.
+     ============================================================ */
+    let linesRaw = [];    // full dataset combined
+    let filtered = [];    // after filters
+    let sortedKey = null; // current sort key
+    let sortAsc  = true;
+    let page = 1;
+    let pageSize = 100;
+
+    // NEW: view mode + lots aggregation store
+    let viewMode = "rows"; // "rows" or "lots"
+    let linesLots = [];
+
+    async function loadAll(){
+      const [ajAdd, calAdd, ajSell, calSell] = await Promise.all([
+        get(ref(db,"/stoneamjz")),      // AJMZ ADD
+        get(ref(db,"/stonecalibrate")), // CAL ADD
+        get(ref(db,"/sellAJMZ")),       // AJMZ SELL
+        get(ref(db,"/sellCalibrate"))   // CAL SELL
+      ]);
+
+      // Aggregate sells
+      const soldAJ = {};
+      if(ajSell.exists()){
+        Object.values(ajSell.val()||{}).forEach(v=>{
+          const k=`${(v.lot||"").trim()}||${(v.lotno||"").trim()}`;
+          if(!soldAJ[k]) soldAJ[k]={pcs:0,cts:0,amt:0,party:new Set()};
+          soldAJ[k].pcs += toNum(v.pcs);
+          soldAJ[k].cts += toNum(v.cts);
+          soldAJ[k].amt += toNum(v.amount);
+          if(v.party) soldAJ[k].party.add(v.party);
+        });
+      }
+      const soldCAL = {};
+      if(calSell.exists()){
+        Object.values(calSell.val()||{}).forEach(v=>{
+          const k=`${(v.lot||"").trim()}||${(v.grade||"").trim()}`;
+          if(!soldCAL[k]) soldCAL[k]={cts:0,amt:0,party:new Set()};
+          soldCAL[k].cts += toNum(v.cts);
+          soldCAL[k].amt += toNum(v.amount);
+          if(v.party) soldCAL[k].party.add(v.party);
+        });
+      }
+
+      // Build lines from ADDs
+      const out = [];
+
+      if(ajAdd.exists()){
+        ajAdd.forEach(n=>{
+          const a = n.val()||{};
+          if(a.status!=="ADD") return;
+          const k = keyAJ(a);
+          const s = soldAJ[k]||{pcs:0,cts:0,amt:0,party:new Set()};
+          const pcs0 = toNum(a.pcs);
+          const cts0 = toNum(a.cts);
+          const pcsS = toNum(s.pcs);
+          const ctsS = toNum(s.cts);
+          const pcsR = Math.max(0, pcs0 - pcsS);
+          const ctsR = Math.max(0, cts0 - ctsS);
+          const amtS = toNum(s.amt);
+          const price = toNum(a.price);
+          const amtR = (ctsR * price);
+          out.push({
+            stone:"AJMZ",
+            lot:a.lot||"",
+            id2:a.lotno||"",
+            desc:a.desc||"",
+            shape:a.shape||"",
+            size:"",
+            addDate:a.date||"",
+            partyList:[a.party||"", ...(s.party?Array.from(s.party):[])].filter(Boolean).join(", "),
+            pcs0, cts0, pcsS, ctsS, pcsR, ctsR,
+            price,
+            amtS, amtR
+          });
+        });
+      }
+
+      if(calAdd.exists()){
+        calAdd.forEach(n=>{
+          const a = n.val()||{};
+          if(a.status!=="ADD") return;
+          const k = keyCAL(a);
+          const s = soldCAL[k]||{cts:0,amt:0,party:new Set()};
+          const cts0 = toNum(a.cts);
+          const ctsS = toNum(s.cts);
+          const ctsR = Math.max(0, cts0 - ctsS);
+          const price = toNum(a.price);
+          const amtS  = toNum(s.amt);
+          const amtR  = (ctsR * price);
+          out.push({
+            stone:"CAL",
+            lot:a.lot||"",
+            id2:a.grade||"",
+            desc:a.desc||"",
+            shape:a.shape||"",
+            size:a.size||"",
+            addDate:a.date||"",
+            partyList:[a.party||"", ...(s.party?Array.from(s.party):[])].filter(Boolean).join(", "),
+            pcs0:0, cts0, pcsS:0, ctsS, pcsR:0, ctsR,
+            price,
+            amtS, amtR
+          });
+        });
+      }
+
+      linesRaw = out;
+      applyFilters();
+    }
+
+    /* ============ Header templates (rows vs lots) ============ */
+    const THEAD_ROWS = `
+      <tr>
+        <th data-key="stone">Stone</th>
+        <th data-key="lot">Lot</th>
+        <th data-key="id2">Lot No / Grade</th>
+        <th data-key="desc">Description</th>
+        <th data-key="shape">Shape</th>
+        <th data-key="size">Size</th>
+        <th data-key="addDate">ADD Date</th>
+        <th data-key="partyList">Parties (ADD/SELL)</th>
+        <th data-key="pcs0"  class="mono">Orig PCS</th>
+        <th data-key="cts0"  class="mono">Orig CTS</th>
+        <th data-key="pcsS"  class="mono">Sold PCS</th>
+        <th data-key="ctsS"  class="mono">Sold CTS</th>
+        <th data-key="pcsR"  class="mono">Rem PCS</th>
+        <th data-key="ctsR"  class="mono">Rem CTS</th>
+        <th data-key="price" class="mono">Price/CT</th>
+        <th data-key="amtS"  class="mono">Sold Amount</th>
+        <th data-key="amtR"  class="mono">Remaining Amount</th>
+      </tr>
+    `;
+
+    const THEAD_LOTS = `
+      <tr>
+        <th data-key="lot">Lot</th>
+        <th data-key="stones">Stone(s)</th>
+        <th data-key="items" class="mono">Items</th>
+        <th data-key="pcs0"  class="mono">Orig PCS</th>
+        <th data-key="cts0"  class="mono">Orig CTS</th>
+        <th data-key="pcsS"  class="mono">Sold PCS</th>
+        <th data-key="ctsS"  class="mono">Sold CTS</th>
+        <th data-key="pcsR"  class="mono">Rem PCS</th>
+        <th data-key="ctsR"  class="mono">Rem CTS</th>
+        <th data-key="avgPrice" class="mono">Avg Price/CT</th>
+        <th data-key="amtS"   class="mono">Sold Amount</th>
+        <th data-key="amtR"   class="mono">Remaining Amount</th>
+      </tr>
+    `;
+
+    function setHeaderLotsMode(isLots){
+      const thead = document.querySelector("#tbl thead");
+      thead.innerHTML = isLots ? THEAD_LOTS : THEAD_ROWS;
+      bindSortHandlers();
+    }
+
+    function bindSortHandlers(){
+      document.querySelectorAll("#tbl thead th").forEach(th=>{
+        th.addEventListener("click", ()=>{
+          const key = th.dataset.key;
+          if(!key) return;
+          if(sortedKey===key){ sortAsc = !sortAsc; }
+          else { sortedKey = key; sortAsc = true; }
+          document.querySelectorAll("#tbl thead th").forEach(h=>h.classList.remove("sort-asc","sort-desc"));
+          th.classList.add(sortAsc?"sort-asc":"sort-desc");
+          renderTableSortedOnly();
+        });
+      });
+    }
+
+    /* ================= Lots aggregation ================= */
+    function buildLots(lines){
+      const map = new Map();
+      for(const r of lines){
+        const key = (r.lot||"").trim();
+        if(!key) continue;
+        if(!map.has(key)){
+          map.set(key, {
+            lot: key,
+            stones: new Set(),
+            items: 0,
+            pcs0:0, cts0:0,
+            pcsS:0, ctsS:0,
+            pcsR:0, ctsR:0,
+            amtS:0, amtR:0,
+            priceCtsSum:0, ctsSumForPrice:0
+          });
+        }
+        const m = map.get(key);
+        m.stones.add(r.stone==="CAL"?"CAL":"AJMZ");
+        m.items += 1;
+        m.pcs0 += r.pcs0||0;
+        m.cts0 += r.cts0||0;
+        m.pcsS += r.pcsS||0;
+        m.ctsS += r.ctsS||0;
+        m.pcsR += r.pcsR||0;
+        m.ctsR += r.ctsR||0;
+        m.amtS += r.amtS||0;
+        m.amtR += r.amtR||0;
+        const price = Number(r.price)||0;
+        const weight = r.cts0||0;
+        if(price>0 && weight>0){
+          m.priceCtsSum += price*weight;
+          m.ctsSumForPrice += weight;
+        }
+      }
+      const out = [];
+      for(const m of map.values()){
+        out.push({
+          lot: m.lot,
+          stones: [...m.stones].sort().join(" / "),
+          items: m.items,
+          pcs0: m.pcs0, cts0: m.cts0,
+          pcsS: m.pcsS, ctsS: m.ctsS,
+          pcsR: m.pcsR, ctsR: m.ctsR,
+          amtS: m.amtS, amtR: m.amtR,
+          avgPrice: (m.ctsSumForPrice>0) ? (m.priceCtsSum/m.ctsSumForPrice) : 0
+        });
+      }
+      return out;
+    }
+
+    /* ================= Filters & render ================= */
+    function applyFilters(){
+      const q = $("q").value.trim().toLowerCase();
+      const stone = $("fStone").value;
+      const lot = $("fLot").value.trim().toLowerCase();
+      const id2 = $("fId2").value.trim().toLowerCase();
+      const party = $("fParty").value.trim().toLowerCase();
+      const shape = $("fShape").value.trim().toLowerCase();
+      const from = asDate($("fFrom").value);
+      const to   = asDate($("fTo").value);
+      const onlyRemain = $("onlyRemain").checked;
+      const onlySold   = $("onlySold").checked;
+
+      let base = linesRaw;
+
+      if(viewMode === "lots"){
+        linesLots = buildLots(base);
+        filtered = linesLots.filter(r=>{
+          if(stone && !r.stones.includes(stone==="CAL"?"CAL":"AJMZ")) return false;
+          if(lot && !String(r.lot).toLowerCase().includes(lot)) return false;
+          if(q){ const blob = `${r.lot} ${r.stones}`.toLowerCase(); if(!blob.includes(q)) return false; }
+          if(onlyRemain){ const remain = (r.ctsR>0) || (r.pcsR>0); if(!remain) return false; }
+          if(onlySold){ const sold = (r.ctsS>0) || (r.pcsS>0); if(!sold) return false; }
+          return true;
+        });
+      }else{
+        filtered = base.filter(r=>{
+          if(stone && r.stone!==stone) return false;
+          if(lot && !String(r.lot).toLowerCase().includes(lot)) return false;
+          if(id2 && !String(r.id2).toLowerCase().includes(id2)) return false;
+          if(shape && !String(r.shape).toLowerCase().includes(shape)) return false;
+          if(party && !String(r.partyList).toLowerCase().includes(party)) return false;
+          if(q){
+            const blob = `${r.stone} ${r.lot} ${r.id2} ${r.desc} ${r.shape} ${r.size} ${r.addDate} ${r.partyList}`.toLowerCase();
+            if(!blob.includes(q)) return false;
+          }
+          if(from){ const d = asDate(r.addDate); if(!(d && d >= from)) return false; }
+          if(to){   const d = asDate(r.addDate); if(!(d && d <= to)) return false; }
+          if(onlyRemain){ const remain = r.stone==="AJMZ" ? (r.pcsR>0 || r.ctsR>0) : (r.ctsR>0); if(!remain) return false; }
+          if(onlySold){ const sold = r.stone==="AJMZ" ? (r.pcsS>0 || r.ctsS>0) : (r.ctsS>0); if(!sold) return false; }
+          return true;
+        });
+      }
+
+      if(sortedKey){
+        filtered.sort((a,b)=>{
+          const A=a[sortedKey], B=b[sortedKey];
+          const nA = typeof A==="number" ? A : parseFloat(String(A).replace(/,/g,""));
+          const nB = typeof B==="number" ? B : parseFloat(String(B).replace(/,/g,""));
+          const bothNum = !isNaN(nA) && !isNaN(nB);
+          let cmp;
+          if(bothNum) cmp = nA - nB; else cmp = String(A??"").localeCompare(String(B??""));
+          return sortAsc ? cmp : -cmp;
+        });
+      }
+
+      page = 1;
+      renderTable();
+    }
+
+    function renderTableSortedOnly(){
+      if(sortedKey){
+        filtered.sort((a,b)=>{
+          const A=a[sortedKey], B=b[sortedKey];
+          const nA = typeof A==="number" ? A : parseFloat(String(A).replace(/,/g,""));
+          const nB = typeof B==="number" ? B : parseFloat(String(B).replace(/,/g,""));
+          const bothNum = !isNaN(nA) && !isNaN(nB);
+          let cmp;
+          if(bothNum) cmp = nA - nB; else cmp = String(A??"").localeCompare(String(B??""));
+          return sortAsc ? cmp : -cmp;
+        });
+      }
+      renderTable();
+    }
+
+    function renderTable(){
+      const thead = document.querySelector("#tbl thead");
+      if(viewMode === "lots") setHeaderLotsMode(true); else setHeaderLotsMode(false);
+
+      pageSize = parseInt($("pageSize").value)||100;
+      const total = filtered.length;
+      const maxPage = Math.max(1, Math.ceil(total / pageSize));
+      if(page>maxPage) page=maxPage;
+      const start=(page-1)*pageSize, end=Math.min(total,start+pageSize);
+      const slice = filtered.slice(start,end);
+
+      const body = document.querySelector("#tbl tbody");
+      body.innerHTML = "";
+
+      if(viewMode === "lots"){
+        slice.forEach(r=>{
+          body.insertAdjacentHTML("beforeend", `
+            <tr>
+              <td>${esc(r.lot)}</td>
+              <td>${esc(r.stones)}</td>
+              <td class="mono">${r.items}</td>
+              <td class="mono">${r.pcs0||""}</td>
+              <td class="mono">${fmt2(r.cts0)}</td>
+              <td class="mono">${r.pcsS||""}</td>
+              <td class="mono">${fmt2(r.ctsS)}</td>
+              <td class="mono">${r.pcsR||""}</td>
+              <td class="mono">${fmt2(r.ctsR)}</td>
+              <td class="mono">${fmt2(r.avgPrice)}</td>
+              <td class="mono">${fmt2(r.amtS)}</td>
+              <td class="mono">${fmt2(r.amtR)}</td>
+            </tr>
+          `);
+        });
+      }else{
+        slice.forEach(r=>{
+          const remFrac = (r.cts0>0)? (r.ctsR/r.cts0) : 0;
+          const cls = (($("zeroOut").checked && (r.ctsR===0 && r.pcsR===0))?"zero-out":(("AJMZ"===r.stone && $("warn10").checked && remFrac<=0.10)?"warn-10":""));
+          body.insertAdjacentHTML("beforeend", `
+            <tr class="${cls}">
+              <td>${r.stone}</td>
+              <td>${esc(r.lot)}</td>
+              <td>${esc(r.id2)}</td>
+              <td>${esc(r.desc)}</td>
+              <td>${esc(r.shape)}</td>
+              <td>${esc(r.size)}</td>
+              <td>${esc(r.addDate)}</td>
+              <td>${esc(r.partyList)}</td>
+              <td class="mono">${r.pcs0? r.pcs0 : ""}</td>
+              <td class="mono">${fmt2(r.cts0)}</td>
+              <td class="mono">${r.pcsS? r.pcsS : ""}</td>
+              <td class="mono">${fmt2(r.ctsS)}</td>
+              <td class="mono">${r.pcsR? r.pcsR : ""}</td>
+              <td class="mono">${fmt2(r.ctsR)}</td>
+              <td class="mono">${r.price || 0}</td>
+              <td class="mono">${fmt2(r.amtS)}</td>
+              <td class="mono">${fmt2(r.amtR)}</td>
+            </tr>
+          `);
+        });
+      }
+
+      // Totals (for current slice)
+      let totals;
+      if(viewMode === "lots"){
+        totals = slice.reduce((m,r)=>{
+          m.OP += r.pcs0||0; m.OC += r.cts0||0;
+          m.SP += r.pcsS||0; m.SC += r.ctsS||0;
+          m.RP += r.pcsR||0; m.RC += r.ctsR||0;
+          m.SA += r.amtS||0; m.RA += r.amtR||0; return m;
+        }, {OP:0,OC:0,SP:0,SC:0,RP:0,RC:0,SA:0,RA:0});
+      }else{
+        totals = slice.reduce((m,r)=>{
+          m.OP += r.pcs0||0; m.OC += r.cts0||0;
+          m.SP += r.pcsS||0; m.SC += r.ctsS||0;
+          m.RP += r.pcsR||0; m.RC += r.ctsR||0;
+          m.SA += r.amtS||0; m.RA += r.amtR||0; return m;
+        }, {OP:0,OC:0,SP:0,SC:0,RP:0,RC:0,SA:0,RA:0});
+      }
+      $("tRows").textContent = total.toLocaleString();
+      $("tOP").textContent   = totals.OP.toLocaleString();
+      $("tOC").textContent   = fmt2(totals.OC);
+      $("tSP").textContent   = totals.SP.toLocaleString();
+      $("tSC").textContent   = fmt2(totals.SC);
+      $("tRP").textContent   = totals.RP.toLocaleString();
+      $("tRC").textContent   = fmt2(totals.RC);
+      $("tSA").textContent   = fmt2(totals.SA);
+      $("tRA").textContent   = fmt2(totals.RA);
+
+      $("pageInfo").textContent = `Page ${page} / ${maxPage}`;
+    }
+
+    // Pagination
+    $("prevPage").addEventListener("click",()=>{ if(page>1){ page--; renderTable(); }});
+    $("nextPage").addEventListener("click",()=>{ const maxPage=Math.max(1,Math.ceil(filtered.length/(parseInt($("pageSize").value)||100))); if(page<maxPage){ page++; renderTable(); }});
+    $("pageSize").addEventListener("change",()=>{ page=1; renderTable(); });
+
+    // Filter bindings
+    ["q","fLot","fId2","fParty","fShape","fFrom","fTo"].forEach(id=> $(id).addEventListener("input",applyFilters));
+    ["fStone","onlyRemain","onlySold","warn10","zeroOut"].forEach(id=> $(id).addEventListener("change",applyFilters));
+
+    // Topbar tabs
+    document.querySelectorAll(".tabbtn").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        document.querySelectorAll(".tabbtn").forEach(x=>x.classList.remove("active"));
+        b.classList.add("active");
+        const t = b.dataset.tab;
+
+        if(t==="lot"){
+          viewMode = "lots";
+          $("title").textContent = "Lots — Aggregated Across AJMZ & Calibrate";
+          setHeaderLotsMode(true);
+          applyFilters();
+        }else{
+          viewMode = "rows";
+          $("title").textContent = t==="all" ? "All Inventory — Remaining, Sold & Amounts" :
+                                   t==="ajmz" ? "AJMZ Inventory — Remaining, Sold & Amounts" :
+                                   t==="cal"  ? "Calibrate Inventory — Remaining, Sold & Amounts" :
+                                                 "By Party — Aggregated Totals";
+          if(t==="ajmz") $("fStone").value = "AJMZ"; else if(t==="cal") $("fStone").value = "CAL"; else $("fStone").value = "";
+          setHeaderLotsMode(false);
+          applyFilters();
+        }
+      });
+    });
+
+    // CSV export (aware of view)
+    function downloadFile(name, content){
+      const blob = new Blob([content], {type:"text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    function getVisibleRows(){
+      // already filtered and paged? Export all filtered rows rather than just current page
+      return filtered; // if you want only current page, return slice logic instead
+    }
+
+    $("btnExport").addEventListener("click", ()=>{
+      const rows = getVisibleRows();
+      let headers, csvRows;
+      if(viewMode === "lots"){
+        headers = ["Lot","Stone(s)","Items","Orig PCS","Orig CTS","Sold PCS","Sold CTS","Rem PCS","Rem CTS","Avg Price/CT","Sold Amount","Remaining Amount"];
+        csvRows = rows.map(r=>[
+          r.lot, r.stones, r.items, r.pcs0||"", fmt2(r.cts0), r.pcsS||"", fmt2(r.ctsS), r.pcsR||"", fmt2(r.ctsR), fmt2(r.avgPrice), fmt2(r.amtS), fmt2(r.amtR)
+        ]);
+      }else{
+        headers = ["Stone","Lot","Lot No / Grade","Description","Shape","Size","ADD Date","Parties (ADD/SELL)","Orig PCS","Orig CTS","Sold PCS","Sold CTS","Rem PCS","Rem CTS","Price/CT","Sold Amount","Remaining Amount"];
+        csvRows = rows.map(r=>[
+          r.stone, r.lot, r.id2, r.desc, r.shape, r.size, r.addDate, r.partyList, r.pcs0||"", fmt2(r.cts0), r.pcsS||"", fmt2(r.ctsS), r.pcsR||"", fmt2(r.ctsR), r.price||0, fmt2(r.amtS), fmt2(r.amtR)
+        ]);
+      }
+      const csv = [headers].concat(csvRows.map(row=>row.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(","))).join("\n");
+      downloadFile(viewMode==="lots"?"lots_report.csv":"inventory_report.csv", csv);
+    });
+
+    // Print
+    $("btnPrint").addEventListener("click", ()=>{ window.print(); });
+
+    // Refresh
+    $("btnRefresh").addEventListener("click", async()=>{ toast("Refreshing…"); await loadAll(); toast("Refreshed."); });
+
+    // Boot
+    function boot(){
+      // set default header and bind sorts
+      setHeaderLotsMode(false);
+      $("pageSize").value = "100";
+      loadAll();
+    }
+    boot();
+  </script>
+</body>
+</html>

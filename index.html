@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Navigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#F5F5F0;
+  --panel:#E6D8C3;
+  --accent:#5D866C;
+  --accent-2:#C2A68C;
+  --ink:#2f3b33;
+  --muted:#6b776f;
+  --line:#d9cbb1;
+  --shadow:rgba(93,134,108,.18);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);
+  font-family:Inter, system-ui, sans-serif;
+  display:flex;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* Vertical Nav */
+.nav-vertical{
+  width:60px;
+  background:#fff;
+  border-right:3px solid var(--accent-2);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:14px 0;
+  gap:20px;
+  box-shadow:6px 0 20px var(--shadow);
+}
+
+.nav-item{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  cursor:pointer;
+  position:relative;
+  text-decoration:none;
+  color:var(--ink);
+  background:#fff;
+  border:1px solid var(--line);
+  transition:.25s;
+}
+
+.nav-item:hover{
+  background:var(--panel);
+  transform:translateX(2px);
+}
+
+.nav-item.active{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+}
+
+/* Tooltip */
+.nav-item::after{
+  content:attr(data-label);
+  position:absolute;
+  left:60px;
+  background:#fff;
+  border:1px solid var(--line);
+  padding:4px 10px;
+  border-radius:8px;
+  white-space:nowrap;
+  box-shadow:0 6px 18px var(--shadow);
+  font-size:12px;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(5px);
+  transition:.2s;
+}
+
+.nav-item:hover::after{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* Optional center message */
+.center{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- VERTICAL NAVIGATION -->
+<div class="nav-vertical">
+  <a href="index.html" class="nav-item" data-label="Account">👤</a>
+  <a href="add.html" class="nav-item active" data-label="Add">➕</a>
+  <a href="sell.html" class="nav-item" data-label="Sell">💎</a>
+    <a href="reports.html" class="nav-item active" data-label="Report">📊</a>
+</div>
+
+<div class="center">Select Module From Left Navigation</div>
+
+</body>
+</html>

@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stones Entry — ADD Module</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+:root{
+  --bg:#F5F5F0;
+  --panel:#E6D8C3;
+  --accent:#5D866C;
+  --accent-2:#C2A68C;
+  --ink:#2f3b33;
+  --muted:#6b776f;
+  --line:#d9cbb1;
+  --shadow:rgba(93,134,108,.18);
+  --green:#5D866C;
+  --green-dark:#4c6f59;
+  --danger:#b94b4b;
+  --danger-dark:#9c3e3e;
+}
+
+/* Global Layout */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:Inter, system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  display:flex;
+  overflow:hidden;
+}
+
+/* NAVIGATION BAR (LEFT-MOST) */
+.nav-vertical{
+  width:60px;
+  background:#fff;
+  border-right:3px solid var(--accent-2);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:14px 0;
+  gap:20px;
+  box-shadow:6px 0 20px var(--shadow);
+}
+.nav-item{
+  width:44px;height:44px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;
+  text-decoration:none;color:var(--ink);
+  background:#fff;border:1px solid var(--line);
+  transition:.25s;
+  position:relative;
+}
+.nav-item:hover{background:var(--panel);transform:translateX(2px);}
+.nav-item.active{background:var(--accent);color:#fff;border:none;}
+.nav-item::after{
+  content:attr(data-label);
+  position:absolute;left:60px;
+  background:#fff;border:1px solid var(--line);
+  padding:4px 10px;border-radius:8px;
+  white-space:nowrap;box-shadow:0 6px 18px var(--shadow);
+  font-size:12px;opacity:0;pointer-events:none;
+  transform:translateY(5px);transition:.2s;
+}
+.nav-item:hover::after{opacity:1;transform:translateY(0);}
+
+/* LEFT PANEL (NARROWED) */
+.left{
+  width:20%;
+  min-width:260px;
+  background:linear-gradient(180deg,var(--panel),#efe5cf);
+  border-right:3px solid var(--accent-2);
+  box-shadow:6px 0 20px var(--shadow);
+  padding:12px;
+  overflow:auto;
+}
+
+/* RIGHT PANEL AUTO EXPANDS */
+.right{
+  flex:1;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ===== Original ADD Module Styles (preserved) ===== */
+.global-actions{
+  position:absolute; top:10px; right:12px; z-index:10;
+  display:flex; gap:8px; align-items:center;
+}
+.icon-btn{
+  cursor:pointer; border:none; padding:8px 10px; border-radius:999px;
+  background:#fff; color:var(--accent); box-shadow:0 6px 14px var(--shadow);
+  border:1px solid var(--line); font-weight:600; font-size:13px;
+}
+.icon-btn:hover{ background:#f8f6f0 }
+
+/* Headings */
+h1{font-size:20px;color:var(--accent);margin-bottom:8px}
+h2{font-size:16px;color:var(--accent);margin:14px 0 8px}
+p.note{font-size:12px;color:var(--muted);margin-bottom:10px}
+
+/* Form */
+label{display:block;font-size:13px;margin:8px 0 4px}
+input,select,textarea{
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  font-size:13px;
+}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>div{flex:1}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--accent);color:#fff;border:none;border-radius:10px;
+  padding:10px 14px;margin-top:10px;font-weight:600;cursor:pointer;
+  box-shadow:0 6px 14px var(--shadow); transition:.15s;
+  text-decoration:none;
+}
+.btn:hover{background:var(--green-dark)}
+.btn.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.btn.secondary:hover{background:#f8f6f0}
+.btn.green{background:var(--green);color:#fff}
+.btn.green:hover{background:var(--green-dark)}
+.btn.danger{background:var(--danger)}
+.btn.danger:hover{background:var(--danger-dark)}
+.btn.block{width:100%}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px;justify-content:flex-end}
+
+/* Sections (full height) */
+.section{
+  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px var(--shadow);
+  margin:0;padding:10px;flex:1;display:flex;flex-direction:column;height:100%;
+}
+.section .head{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 8px}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}
+.kpis .chip{background:#fff;border:1px solid var(--line);padding:6px 8px;border-radius:999px;font-size:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#eef3ea;font-weight:600;color:var(--accent);font-size:11px}
+
+.section > .table-wrap{
+  flex:1 1 auto;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;position:relative;
+}
+
+/* Tables */
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+thead th{
+  position:sticky;top:0;background:var(--panel);
+  text-align:left;padding:8px;border-bottom:1px solid var(--line);z-index:1
+}
+tbody td{padding:8px;border-bottom:1px solid #e9dec9;vertical-align:top; position:relative;}
+tbody tr:hover{background:#faf8f0}
+tfoot td{
+  position:sticky;bottom:0;background:#e7dbc5;border-top:1px solid var(--line);
+  padding:8px;font-weight:700
+}
+tfoot .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
+
+/* Editable cell wrapper + persistent + button */
+.cell-wrap{
+  display:flex; align-items:flex-start; gap:6px; position:relative;
+}
+.cell{
+  outline:none;border-radius:6px;padding:4px 6px;min-width:40px;
+  display:inline-block;
+}
+
+/* Floating + picker trigger */
+.plus-trigger{
+  position:absolute; right:6px; top:6px;
+  background:#fff; border:1px solid var(--line); border-radius:6px;
+  padding:2px 6px; font-weight:700; color:var(--accent);
+  cursor:pointer; box-shadow:0 4px 10px var(--shadow);
+  user-select:none;
+  display:none;
+}
+td:hover .plus-trigger{ display:inline-block; }
+
+/* The small picker panel */
+.picker{
+  position:absolute; z-index:50; min-width:220px; max-width:280px;
+  background:#fff; border:1px solid var(--line); border-radius:12px;
+  box-shadow:0 20px 40px rgba(93,134,108,.25);
+  padding:10px; display:none;
+}
+.picker h5{margin-bottom:8px; color:var(--accent); font-size:13px}
+.picker .options{max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:6px; background:#faf8f0}
+.picker label{display:flex; align-items:center; gap:8px; margin:6px 0;}
+.picker .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:8px}
+.picker .actions .btn{margin:0; padding:6px 10px; font-size:12px}
+
+/* Modal */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(47,59,51,.35);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;padding:20px;z-index:100;
+}
+.modal{
+  width:min(760px,96vw);background:linear-gradient(180deg,#fff,#fbfaf5);
+  border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 60px rgba(93,134,108,.30);
+  padding:18px
+}
+.modal h3{color:var(--accent);margin-bottom:8px}
+.tabbar{display:flex;gap:8px;margin:8px 0 12px}
+.tabbar .tab{
+  padding:8px 12px;border-radius:999px;border:1px solid var(--line);
+  background:#fff;color:#2f3b33;cursor:pointer;font-weight:600
+}
+.tabbar .tab.active{background:var(--panel); color:#2f3b33}
+.grid-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.listbox{
+  border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;
+  max-height:300px;overflow:auto
+}
+.item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 8px;border:1px solid #dccaa8;border-radius:10px;background:#faf6ec;margin-bottom:8px
+}
+.item .name{font-size:13px}
+.item .del{border:none;background:var(--danger);color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+
+/* Toast & helpers */
+#toast{
+  position:fixed; right:18px; bottom:18px; z-index:200;
+  background:#fff; border:1px solid var(--line); color:var(--ink);
+  padding:10px 14px; border-radius:12px; box-shadow:0 10px 24px var(--shadow);
+  display:none; font-weight:600;
+}
+.hidden{display:none}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
+hr.sep{border:none;border-top:1px solid var(--line);margin:10px 0}
+.w100{width:100%}
+</style>
+</head>
+<body>
+
+<!-- VERTICAL NAVIGATION -->
+<div class="nav-vertical">
+  <a href="index.html" class="nav-item" data-label="Account">👤</a>
+  <a href="add.html" class="nav-item active" data-label="Add">➕</a>
+  <a href="sell.html" class="nav-item" data-label="Sell">💎</a>
+    <a href="reports.html" class="nav-item active" data-label="Report">📊</a>
+</div>
+
+<!-- LEFT PANEL -->
+<div class="left">
+  <h1>Add Stones (Status: ADD)</h1>
+  <p class="note">Generate new <b>ADD</b> rows for AJMZ or Calibrate. Use arrow keys to navigate cells like in Sheets.</p>
+
+  <label>Target Table</label>
+  <select id="targetTable">
+    <option value="AJMZ" selected>AJMZ</option>
+    <option value="CAL">Calibrate</option>
+  </select>
+
+  <h2>Main Details</h2>
+  <div class="row">
+    <div>
+      <label>Stone</label>
+      <input id="stone" placeholder="e.g., AJMZ / Calibrate">
+    </div>
+    <div>
+      <label>Date</label>
+      <input type="date" id="date">
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label>Party</label>
+      <input id="party" placeholder="Supplier / Buyer">
+    </div>
+    <div>
+      <label>Deet</label>
+      <input id="deet" placeholder="Invoice / Reference">
+    </div>
+  </div>
+
+  <!-- AJMZ Lot Fields -->
+  <div id="ajmzLotFields">
+    <h2>Lot Details (AJMZ Only)</h2>
+    <div class="row">
+      <div>
+        <label>Lot Name</label>
+        <input id="lotName" placeholder="e.g., AJMZ 1">
+      </div>
+      <div>
+        <label>Lot Format (Base / Start No.)</label>
+        <input id="lotFormat" placeholder="e.g., 1 or 4/001">
+      </div>
+      <div>
+        <label>How many Lot Nos?</label>
+        <input type="number" id="lotCount" min="1" max="5000" value="100">
+      </div>
+    </div>
+    <p class="note">Example: Lot Name = <b>AJMZ 4</b>, Lot Format = <b>4</b>, Count = <b>1000</b> → generates <b>4/0001…4/1000</b>. “Lot” column shows exactly <b>AJMZ 4</b>.</p>
+  </div>
+
+  <!-- Calibrate fields -->
+  <div id="calOnly" class="hidden">
+    <label>Calibrate Grade (default)</label>
+    <input id="defGrade" placeholder="A">
+    <div class="row">
+      <div>
+        <label>Calibrate Size (default)</label>
+        <input id="defSize" placeholder="2×2">
+      </div>
+      <div>
+        <label>How many Lot Nos?</label>
+        <input type="number" id="calLotCount" min="1" max="5000" value="100">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Lot</label>
+        <input id="calLot" placeholder="1  or  2/001">
+      </div>
+      <div>
+        <label>Link to AJMZ Lot(s)</label>
+        <select id="ajmzLink" multiple size="6" style="height:auto"></select>
+      </div>
+    </div>
+    <p class="note">Remarks are left empty intentionally. (Links are for your reference only.)</p>
+  </div>
+
+  <!-- Submission status (shows after submit) -->
+  <div id="lastTxDisplay" style="margin-top:10px;font-size:13px;color:var(--muted);display:none;">
+    <b>Last Submitted Transaction:</b> <span id="lastTxNo"></span>
+  </div>
+
+  <button class="btn" id="btnGenerate">Generate ADD Rows</button>
+
+  <h2>Tools</h2>
+  <!-- Submit button is RED -->
+  <button class="btn danger" id="btnSubmit">Submit record.</button>
+
+  <hr class="sep" />
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+  <div class="global-actions">
+    <button class="icon-btn" id="btnSettings">⚙️ Saved Lists</button>
+  </div>
+
+  <!-- AJMZ SECTION -->
+  <div class="section" id="secAJMZ">
+    <div class="head">
+      <h3>AJMZ — Transactions</h3>
+    </div>
+    <div class="toolbar">
+      <button class="btn secondary" id="btnAJMZClear">🧹 Clear</button>
+    </div>
+    <div class="table-wrap">
+      <table id="tblAJMZ">
+        <thead>
+          <tr>
+            <th>Transaction No.</th>
+            <th>Stone</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Party</th>
+            <th>Deet</th>
+            <th>Lot</th>
+            <th>Lot No.</th>
+            <th>Description</th>
+            <th>Shape</th>
+            <th class="mono">Pcs</th>
+            <th class="mono">Cts</th>
+            <th class="mono">Price</th>
+            <th class="mono">Amount</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="10" style="text-align:right;font-weight:700;">TOTALS</td>
+            <td class="mono" id="aj_tot_pcs">0</td>
+            <td class="mono" id="aj_tot_cts">0</td>
+            <td></td>
+            <td class="mono" id="aj_tot_amt">0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- CALIBRATE SECTION -->
+  <div class="section hidden" id="secCAL">
+    <div class="head">
+      <h3>CALIBRATE — Transactions</h3>
+    </div>
+    <div class="toolbar">
+      <button class="btn secondary" id="btnCALClear">🧹 Clear</button>
+    </div>
+    <div class="table-wrap">
+      <table id="tblCAL">
+        <thead>
+          <tr>
+            <th>Transaction No.</th>
+            <th>Stone</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Party</th>
+            <th>Deet</th>
+            <th>Lot</th>
+            <th>Grade</th>
+            <th>Description</th>
+            <th>Shape</th>
+            <th>Size</th>
+            <th class="mono">CTS</th>
+            <th class="mono">Price</th>
+            <th class="mono">Amount</th>
+            <th>Remarks</th>
+            <th>AJMZ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="12" style="text-align:right;font-weight:700;">TOTALS</td>
+            <td class="mono" id="cal_tot_cts">0</td>
+            <td></td>
+            <td class="mono" id="cal_tot_amt">0</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Saved Lists Modal -->
+<div class="modal-backdrop" id="listsModal">
+  <div class="modal">
+    <h3>Manage Saved Lists</h3>
+    <div class="tabbar">
+      <button class="tab active" data-tab="shapes">Shapes</button>
+      <button class="tab" data-tab="sizes">Sizes</button>
+      <button class="tab" data-tab="links">AJMZ Links</button>
+    </div>
+
+    <div id="tabContent">
+      <!-- Shapes -->
+      <div class="tabpane" data-name="shapes">
+        <div class="grid-two">
+          <div>
+            <label>Add Shape</label>
+            <div class="row">
+              <input id="inShape" placeholder="e.g., Round">
+              <button class="btn green" id="btnAddShape">➕ Add</button>
+            </div>
+            <p class="note">These appear in the “+” picker for <b>Shape</b> cells.</p>
+          </div>
+          <div>
+            <div class="listbox" id="listShapes"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sizes -->
+      <div class="tabpane hidden" data-name="sizes">
+        <div class="grid-two">
+          <div>
+            <label>Add Size</label>
+            <div class="row">
+              <input id="inSize" placeholder="e.g., 2×2">
+              <button class="btn green" id="btnAddSize">➕ Add</button>
+            </div>
+            <p class="note">These appear in the “+” picker for <b>Size</b> cells.</p>
+          </div>
+          <div>
+            <div class="listbox" id="listSizes"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div class="tabpane hidden" data-name="links">
+        <div class="grid-two">
+          <div>
+            <label>Add AJMZ Link</label>
+            <div class="row">
+              <input id="inLink" placeholder="e.g., AJMZ1">
+              <button class="btn green" id="btnAddLink">➕ Add</button>
+            </div>
+            <p class="note">These appear in the “+” picker for the <b>AJMZ</b> column in Calibrate and in the left panel multi-select.</p>
+          </div>
+          <div>
+            <div class="listbox" id="listLinks"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" id="btnCloseLists">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- floating picker for + button -->
+<div class="picker" id="valuePicker">
+  <h5 id="pickerTitle">Add values</h5>
+  <div class="options" id="pickerOptions"></div>
+  <div class="actions">
+    <button class="btn secondary" id="pickerCancel">Cancel</button>
+    <button class="btn green" id="pickerApply">Apply</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">✅ Submitted successfully!</div>
+
+<script type="module">
+/* ========= Utilities ========= */
+const sanitizeFloat = (v)=>{ const n=parseFloat((v||"").toString().replace(/,/g,"").trim()); return isFinite(n)?n:0; };
+const textToList = (txt)=> (txt||"").split(",").map(s=>s.trim()).filter(Boolean);
+const listToText = (arr)=> [...new Set(arr.map(s=>s.trim()).filter(Boolean))].join(", ");
+
+/* Lot number formatter with auto-padding */
+function lotNoFmt(base,seq,totalCount=100){
+  let padLen=3;
+  if(totalCount>=1000 && totalCount<10000) padLen=4;
+  else if(totalCount>=10000 && totalCount<100000) padLen=5;
+  else if(totalCount>=100000) padLen=6;
+  return `${base}/${String(seq).padStart(padLen,"0")}`;
+}
+const numericBaseFromFormat = (fmt)=>{ const m=(fmt||"").match(/\d+/); return m?m[0]:"1"; };
+
+/* Amount per row */
+function computeAmountRow(tr){
+  const ctsSpan = tr.querySelector('td[data-col="cts"] .cell');
+  const priceSpan = tr.querySelector('td[data-col="price"] .cell');
+  const amountSpan = tr.querySelector('td[data-col="amount"] .cell, td[data-col="amount"]');
+  if(!ctsSpan || !priceSpan) return;
+  const cts = sanitizeFloat(ctsSpan.textContent);
+  const price = sanitizeFloat(priceSpan.textContent);
+  const value = (cts*price||0).toLocaleString(undefined,{maximumFractionDigits:2});
+  if(amountSpan) amountSpan.textContent = value;
+}
+
+/* ========= Totals ========= */
+function updateTotals(tableId){
+  if(tableId==="AJMZ"){
+    const tbody = document.querySelector("#tblAJMZ tbody");
+    let sumPcs=0, sumCts=0, sumAmt=0;
+    tbody.querySelectorAll("tr").forEach(tr=>{
+      sumPcs += sanitizeFloat(tr.querySelector('td[data-col="pcs"] .cell')?.textContent||"0");
+      const cts = sanitizeFloat(tr.querySelector('td[data-col="cts"] .cell')?.textContent||"0");
+      const price = sanitizeFloat(tr.querySelector('td[data-col="price"] .cell')?.textContent||"0");
+      sumCts += cts; sumAmt += cts*price;
+    });
+    document.getElementById("aj_tot_pcs").textContent = sumPcs.toLocaleString();
+    document.getElementById("aj_tot_cts").textContent = sumCts.toLocaleString(undefined,{maximumFractionDigits:2});
+    document.getElementById("aj_tot_amt").textContent = sumAmt.toLocaleString(undefined,{maximumFractionDigits:2});
+  }else{
+    const tbody = document.querySelector("#tblCAL tbody");
+    let sumCts=0, sumAmt=0;
+    tbody.querySelectorAll("tr").forEach(tr=>{
+      const cts = sanitizeFloat(tr.querySelector('td[data-col="cts"] .cell')?.textContent||"0");
+      const price = sanitizeFloat(tr.querySelector('td[data-col="price"] .cell')?.textContent||"0");
+      sumCts += cts; sumAmt += cts*price;
+    });
+    document.getElementById("cal_tot_cts").textContent = sumCts.toLocaleString(undefined,{maximumFractionDigits:2});
+    document.getElementById("cal_tot_amt").textContent = sumAmt.toLocaleString(undefined,{maximumFractionDigits:2});
+  }
+}
+
+/* ========= Storage ========= */
+const STORAGE_KEYS={ AJMZ:'stones_AJMZ_data', CAL:'stones_CAL_data',
+  SHAPES:'saved_shapes', SIZES:'saved_sizes', LINKS:'saved_links' };
+
+function rowToObject(tr){
+  const obj={};
+  tr.querySelectorAll('td[data-col]').forEach(td=>{
+    const key=td.dataset.col;
+    const span=td.querySelector('.cell');
+    obj[key]=span? (span.textContent||""): (td.textContent||"");
+  });
+  return obj;
+}
+function saveTable(tableId){
+  const table=document.getElementById(tableId==="AJMZ"?"tblAJMZ":"tblCAL");
+  const data=[...table.querySelectorAll("tbody tr")].map(tr=>rowToObject(tr,tableId));
+  localStorage.setItem(STORAGE_KEYS[tableId],JSON.stringify(data));
+  updateTotals(tableId);
+}
+function buildCell(col, {editable=false, text="" , plus=null, mono=false}={}){
+  const td=document.createElement("td");
+  td.setAttribute("data-col", col);
+  const wrap=document.createElement("div"); wrap.className="cell-wrap";
+  const span=document.createElement("span"); span.className="cell"+(mono?" mono":"");
+  if(editable) span.setAttribute("contenteditable","true");
+  span.textContent = text || "";
+  wrap.appendChild(span);
+  if(plus){
+    const btn=document.createElement("button");
+    btn.className="plus-trigger"; btn.dataset.plus=plus; btn.textContent="+";
+    wrap.appendChild(btn);
+  }
+  td.appendChild(wrap);
+  return td;
+}
+function repaintTable(tableId){
+  const isAJ = tableId==="AJMZ";
+  const table=document.getElementById(isAJ?"tblAJMZ":"tblCAL");
+  const tbody=table.querySelector("tbody");
+  const raw=localStorage.getItem(STORAGE_KEYS[tableId]);
+  const rows=raw?JSON.parse(raw):[];
+  tbody.innerHTML="";
+  rows.forEach(obj=>{
+    const tr=document.createElement("tr");
+    tr.appendChild(buildCell("tx",{text:obj.tx||""}));
+    tr.appendChild(buildCell("stone",{text:obj.stone||""}));
+    tr.appendChild(buildCell("status",{text:obj.status||""}));
+    tr.appendChild(buildCell("date",{text:obj.date||""}));
+    tr.appendChild(buildCell("party",{text:obj.party||""}));
+    tr.appendChild(buildCell("deet",{text:obj.deet||""}));
+    tr.appendChild(buildCell("lot",{text:obj.lot||""}));
+
+    if(isAJ){
+      tr.appendChild(buildCell("lotno",{text:obj.lotno||""}));
+      tr.appendChild(buildCell("desc",{editable:true, text:obj.desc||"", mono:true}));
+      tr.appendChild(buildCell("shape",{editable:true, text:obj.shape||"", mono:true, plus:"shape"}));
+      tr.appendChild(buildCell("pcs",{editable:true, text:obj.pcs||"", mono:true}));
+      tr.appendChild(buildCell("cts",{editable:true, text:obj.cts||"", mono:true}));
+      tr.appendChild(buildCell("price",{editable:true, text:obj.price||"", mono:true}));
+      tr.appendChild(buildCell("amount",{text:obj.amount||"", mono:true}));
+      tr.appendChild(buildCell("remark",{editable:true, text:obj.remark||""}));
+    }else{
+      tr.appendChild(buildCell("grade",{editable:true, text:obj.grade||"", mono:true}));
+      tr.appendChild(buildCell("desc",{editable:true, text:obj.desc||"", mono:true}));
+      tr.appendChild(buildCell("shape",{editable:true, text:obj.shape||"", mono:true, plus:"shape"}));
+      tr.appendChild(buildCell("size",{editable:true, text:obj.size||"", mono:true, plus:"size"}));
+      tr.appendChild(buildCell("cts",{editable:true, text:obj.cts||"", mono:true}));
+      tr.appendChild(buildCell("price",{editable:true, text:obj.price||"", mono:true}));
+      tr.appendChild(buildCell("amount",{text:obj.amount||"", mono:true}));
+      tr.appendChild(buildCell("remarks",{editable:true, text:obj.remarks||"", mono:true}));
+      tr.appendChild(buildCell("ajmzlinks",{editable:true, text:obj.ajmzlinks||"", mono:true, plus:"ajmz"}));
+    }
+
+    tbody.appendChild(tr);
+    computeAmountRow(tr);
+  });
+  attachGridBehavior(table);
+  updateTotals(tableId);
+}
+
+/* ========= Excel-like navigation ========= */
+function attachGridBehavior(table){
+  const rows=[...table.querySelectorAll("tbody tr")];
+  rows.forEach((tr,rIdx)=>{
+    const cells=[...tr.querySelectorAll('.cell[contenteditable]')];
+    cells.forEach((span,cIdx)=>{ span.dataset.r=rIdx; span.dataset.c=cIdx; span.setAttribute('tabindex','0'); });
+  });
+
+  table.onkeydown = (e)=>{
+    const span = e.target.closest('.cell[contenteditable]');
+    if(!span) return;
+    const r = +span.dataset.r, c=+span.dataset.c;
+    const find = (rr,cc)=>{
+      const trs=[...table.querySelectorAll("tbody tr")];
+      if(rr<0||cc<0) return null;
+      const row=trs[rr]; if(!row) return null;
+      const ed=[...row.querySelectorAll('.cell[contenteditable]')];
+      if(ed[cc]) return ed[cc];
+      if(cc<0){ const prev=trs[rr-1]; if(!prev) return null; const p=[...prev.querySelectorAll('.cell[contenteditable]')]; return p[p.length-1]||null; }
+      const next=trs[rr+1]; if(!next) return null; const n=[...next.querySelectorAll('.cell[contenteditable]')]; return n[0]||null;
+    };
+    let t=null;
+    if(e.key==="ArrowRight"){ e.preventDefault(); t=find(r,c+1); }
+    else if(e.key==="ArrowLeft"){ e.preventDefault(); t=find(r,c-1); }
+    else if(e.key==="ArrowDown"){ e.preventDefault(); t=find(r+1,c); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); t=find(r-1,c); }
+    if(t){
+      const rng=document.createRange(); const sel=window.getSelection();
+      rng.selectNodeContents(t); rng.collapse(false); sel.removeAllRanges(); sel.addRange(rng); t.focus();
+    }
+  };
+
+  table.oninput = (e)=>{
+    const tr = e.target.closest("tr");
+    if(tr){ computeAmountRow(tr); }
+    if(table.id==="tblAJMZ") saveTable("AJMZ"); else saveTable("CAL");
+  };
+
+  table.onclick = (e)=>{
+    const btn = e.target.closest(".plus-trigger");
+    if(!btn) return;
+    const td = btn.closest("td");
+    showPickerFor(td, btn.dataset.plus);
+  };
+}
+
+/* ========= Toast ========= */
+const toast = document.getElementById("toast");
+function showToast(msg="✅ Submitted successfully!"){
+  toast.textContent = msg;
+  toast.style.display="block";
+  setTimeout(()=>{ toast.style.display="none"; }, 3000);
+}
+
+/* ========= Saved Lists (Modal) ========= */
+const STORAGE = { SHAPES:'saved_shapes', SIZES:'saved_sizes', LINKS:'saved_links' };
+const btnSettings = document.getElementById("btnSettings");
+const listsModal = document.getElementById("listsModal");
+const btnCloseLists = document.getElementById("btnCloseLists");
+const tabButtons = [...document.querySelectorAll(".tabbar .tab")];
+const panes = [...document.querySelectorAll(".tabpane")];
+
+btnSettings.addEventListener("click",()=>{ listsModal.style.display="flex"; refreshListsUI(); });
+btnCloseLists.addEventListener("click",()=>{ listsModal.style.display="none"; });
+listsModal.addEventListener("click",(e)=>{ if(e.target===listsModal) listsModal.style.display="none"; });
+
+tabButtons.forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    tabButtons.forEach(b=>b.classList.remove("active"));
+    panes.forEach(p=>p.classList.add("hidden"));
+    btn.classList.add("active");
+    document.querySelector(`.tabpane[data-name="${btn.dataset.tab}"]`).classList.remove("hidden");
+  });
+});
+
+function getSavedList(kind){
+  const key = kind==="shape"? STORAGE.SHAPES : kind==="size"? STORAGE.SIZES : STORAGE.LINKS;
+  return JSON.parse(localStorage.getItem(key)||"[]");
+}
+function setSavedList(kind, arr){
+  const key = kind==="shape"? STORAGE.SHAPES : kind==="size"? STORAGE.SIZES : STORAGE.LINKS;
+  const clean=[...new Set(arr.map(s=>s.trim()).filter(Boolean))];
+  localStorage.setItem(key, JSON.stringify(clean));
+  if(kind==="ajmz") refreshLeftPanelLinks();
+}
+
+function refreshListsUI(){
+  renderListUI('shapes', STORAGE.SHAPES, 'listShapes');
+  renderListUI('sizes', STORAGE.SIZES, 'listSizes');
+  renderListUI('links', STORAGE.LINKS, 'listLinks');
+}
+function renderListUI(kind, key, containerId){
+  const box=document.getElementById(containerId);
+  const vals=JSON.parse(localStorage.getItem(key)||"[]");
+  box.innerHTML = vals.length? "" : `<p class="note">No ${kind} saved yet.</p>`;
+  vals.forEach((v,i)=>{
+    const div=document.createElement("div"); div.className="item";
+    div.innerHTML = `<span class="name">${v}</span><button class="del" data-key="${key}" data-index="${i}">Delete</button>`;
+    box.appendChild(div);
+  });
+}
+document.addEventListener("click",(e)=>{
+  const del=e.target.closest(".del"); if(!del) return;
+  const key=del.dataset.key, idx=+del.dataset.index;
+  const arr=JSON.parse(localStorage.getItem(key)||"[]");
+  arr.splice(idx,1);
+  localStorage.setItem(key, JSON.stringify(arr));
+  refreshListsUI();
+});
+
+/* Adders */
+document.getElementById("btnAddShape").addEventListener("click",()=>{
+  const v=document.getElementById("inShape").value.trim(); if(!v) return;
+  const list=getSavedList("shape"); list.push(v); setSavedList("shape",list);
+  document.getElementById("inShape").value=""; refreshListsUI();
+});
+document.getElementById("btnAddSize").addEventListener("click",()=>{
+  const v=document.getElementById("inSize").value.trim(); if(!v) return;
+  const list=getSavedList("size"); list.push(v); setSavedList("size",list);
+  document.getElementById("inSize").value=""; refreshListsUI();
+});
+document.getElementById("btnAddLink").addEventListener("click",()=>{
+  const v=document.getElementById("inLink").value.trim(); if(!v) return;
+  const list=getSavedList("ajmz"); list.push(v); setSavedList("ajmz",list);
+  document.getElementById("inLink").value=""; refreshListsUI();
+});
+
+/* Left panel AJMZ links select sync */
+function refreshLeftPanelLinks(){
+  const list=getSavedList("ajmz");
+  const sel=document.getElementById("ajmzLink");
+  const current=[...sel.options].map(o=>o.value);
+  if(JSON.stringify(list)!==JSON.stringify(current)){
+    sel.innerHTML="";
+    list.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
+  }
+}
+
+/* ========= + Picker ========= */
+const picker = document.getElementById("valuePicker");
+const pickerTitle = document.getElementById("pickerTitle");
+const pickerOptions = document.getElementById("pickerOptions");
+const pickerCancel = document.getElementById("pickerCancel");
+const pickerApply = document.getElementById("pickerApply");
+let pickerContext = { td:null, type:null };
+
+function showPickerFor(td, type){
+  pickerContext={ td, type };
+  const rect=td.getBoundingClientRect();
+  picker.style.left = Math.min(rect.left + window.scrollX + 10, window.innerWidth - 300) + "px";
+  picker.style.top  = (rect.top + window.scrollY + rect.height + 6) + "px";
+  pickerTitle.textContent = "Add " + (type==="ajmz" ? "AJMZ Links" : (type==="size" ? "Sizes" : "Shapes"));
+  const list = type==="ajmz"? getSavedList("ajmz") : type==="size"? getSavedList("size") : getSavedList("shape");
+  renderPickerOptions(list);
+  picker.style.display="block";
+}
+function renderPickerOptions(list){
+  pickerOptions.innerHTML="";
+  if(!list.length){
+    const p=document.createElement("p"); p.className="note"; p.textContent="No saved values yet. Click ⚙️ Saved Lists to add.";
+    pickerOptions.appendChild(p); return;
+  }
+  list.forEach(v=>{
+    const id="opt_"+Math.random().toString(36).slice(2);
+    const label=document.createElement("label");
+    label.innerHTML = `<input type="checkbox" id="${id}" value="${v}"><span>${v}</span>`;
+    pickerOptions.appendChild(label);
+  });
+}
+pickerCancel.addEventListener("click",()=>{ picker.style.display="none"; });
+pickerApply.addEventListener("click",()=>{
+  if(!pickerContext.td) return;
+  const checked=[...pickerOptions.querySelectorAll('input[type="checkbox"]:checked')].map(i=>i.value);
+  const span=pickerContext.td.querySelector(".cell");
+  const merged=listToText([ ...textToList(span.textContent), ...checked ]);
+  span.textContent=merged;
+  picker.style.display="none";
+  const tbl = pickerContext.td.closest("table");
+  if(tbl.id==="tblAJMZ") saveTable("AJMZ"); else saveTable("CAL");
+});
+document.addEventListener("click",(e)=>{
+  if(picker.style.display==="block"){
+    if(!picker.contains(e.target) && !e.target.closest(".plus-trigger")){
+      picker.style.display="none";
+    }
+  }
+});
+
+/* ========= Firebase: submit rows & assign counter AFTER submit ========= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDkgQ5BCl8LySoiq5CC-HOWJddnJQQa3jQ",
+  authDomain: "poojainventory-ab7fa.firebaseapp.com",
+  databaseURL: "https://poojainventory-ab7fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "poojainventory-ab7fa",
+  storageBucket: "poojainventory-ab7fa.firebasestorage.app",
+  messagingSenderId: "804100194953",
+  appId: "1:804100194953:web:0af84ea1d53c3dde26bc58"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+function formatTx(n){ return "ADD-"+String(n).padStart(5,"0"); }
+
+async function reserveNextTransactionNumber(){
+  const counterRef = ref(db,"/counters/stoneAdd");
+  const snap = await get(counterRef);
+  const current = snap.exists()? (parseInt(snap.val(),10) || 0) : 0;
+  const next = current + 1;
+  await set(counterRef,next);
+  return next;
+}
+
+function collectRows(tableId){
+  const table=document.getElementById(tableId==="AJMZ"?"tblAJMZ":"tblCAL");
+  const rows=[...table.querySelectorAll("tbody tr")];
+  return rows.map(tr=>rowToObject(tr,tableId));
+}
+
+/* Push all current rows to Firebase, assigning TX after reservation */
+async function submitToFirebase(tableId){
+  // correct upload targets
+  const path = tableId==="AJMZ" ? "/stoneamjz" : "/stonecalibrate";
+  const tableEl = document.getElementById(tableId==="AJMZ"?"tblAJMZ":"tblCAL");
+  const list = collectRows(tableId);
+  if(!list.length){ alert("No rows to submit."); return; }
+
+  const btn=document.getElementById("btnSubmit");
+  btn.disabled=true; btn.textContent="Submitting...";
+
+  try{
+    const reservedInt = await reserveNextTransactionNumber();
+    const tx = formatTx(reservedInt);
+
+    // reflect TX in UI immediately
+    const txCells = tableEl.querySelectorAll('tbody tr td[data-col="tx"] .cell');
+    txCells.forEach(cell=> cell.textContent = tx);
+
+    // upload
+    for(const rec of list){
+      rec.tx = tx;
+      const cts = sanitizeFloat(rec.cts||"0");
+      const price = sanitizeFloat(rec.price||"0");
+      rec.amount = (cts*price||0);
+      await set(push(ref(db, path)), rec);
+    }
+
+    // persist current (with TX), then clear UI & local
+    saveTable(tableId);
+
+    // CLEAR rows after submit
+    tableEl.querySelector("tbody").innerHTML = "";
+    localStorage.removeItem(STORAGE_KEYS[tableId]);
+    updateTotals(tableId);
+
+    // show last TX
+    document.getElementById("lastTxNo").textContent = tx;
+    document.getElementById("lastTxDisplay").style.display = "block";
+
+    // auto-switch back to AJMZ (Option 2)
+    if(targetSel.value!=="AJMZ"){
+      targetSel.value = "AJMZ";
+      targetSel.dispatchEvent(new Event("change"));
+    }
+
+    showToast("✅ Submitted successfully! Transaction No: " + tx);
+  }catch(err){
+    console.error(err);
+    alert("Submission failed: " + err.message);
+  }finally{
+    btn.disabled=false; btn.textContent="Submit record.";
+  }
+}
+
+/* ========= Generate / Clear / Toggle ========= */
+const targetSel=document.getElementById("targetTable");
+const stoneInput=document.getElementById("stone");
+
+targetSel.addEventListener("change",()=>{
+  const val=targetSel.value;
+  const aj=document.getElementById("secAJMZ");
+  const ca=document.getElementById("secCAL");
+  if(val==="AJMZ"){
+    aj.classList.remove("hidden"); ca.classList.add("hidden");
+    document.getElementById("calOnly").classList.add("hidden");
+    document.getElementById("ajmzLotFields").classList.remove("hidden");
+    stoneInput.value="AJMZ"; stoneInput.readOnly=true;
+  }else{
+    aj.classList.add("hidden"); ca.classList.remove("hidden");
+    document.getElementById("calOnly").classList.remove("hidden");
+    document.getElementById("ajmzLotFields").classList.add("hidden");
+    stoneInput.value="Calibrate"; stoneInput.readOnly=true;
+  }
+});
+
+document.getElementById("btnAJMZClear").addEventListener("click",()=>{
+  if(confirm("Clear all AJMZ rows?")){
+    document.querySelector("#tblAJMZ tbody").innerHTML="";
+    localStorage.removeItem(STORAGE_KEYS.AJMZ);
+    updateTotals("AJMZ");
+  }
+});
+document.getElementById("btnCALClear").addEventListener("click",()=>{
+  if(confirm("Clear all Calibrate rows?")){
+    document.querySelector("#tblCAL tbody").innerHTML="";
+    localStorage.removeItem(STORAGE_KEYS.CAL);
+    updateTotals("CAL");
+  }
+});
+
+/* Generate ADD Rows — Transaction No stays BLANK until submit */
+document.getElementById("btnGenerate").addEventListener("click", ()=>{
+  const target=targetSel.value;
+  const stone=stoneInput.value.trim();
+  const date=document.getElementById("date").value;
+  const party=document.getElementById("party").value.trim();
+  const deet=document.getElementById("deet").value.trim();
+  if(!stone){ alert("Please enter Stone name."); return; }
+
+  if(target==="AJMZ"){
+    const lotName=document.getElementById("lotName").value.trim()||"AJMZ 1";
+    const lotFmt=document.getElementById("lotFormat").value.replace(/[^0-9/]/g,"").trim()||"1";
+    const count=Math.max(1,parseInt(document.getElementById("lotCount").value||"1"));
+    const baseNum=numericBaseFromFormat(lotFmt);
+
+    const tbody=document.querySelector("#tblAJMZ tbody");
+    for(let seq=1; seq<=count; seq++){
+      const lotNo=lotNoFmt(baseNum,seq,count);
+      const tr=document.createElement("tr");
+
+      [["tx",""],["stone",stone],["status","ADD"],["date",date],["party",party],["deet",deet],
+       ["lot",lotName],["lotno",lotNo]].forEach(([k,v])=> tr.appendChild(buildCell(k,{text:v})));
+      tr.appendChild(buildCell("desc",{editable:true, mono:true}));
+      tr.appendChild(buildCell("shape",{editable:true, mono:true, plus:"shape"}));
+      tr.appendChild(buildCell("pcs",{editable:true, mono:true}));
+      tr.appendChild(buildCell("cts",{editable:true, mono:true}));
+      tr.appendChild(buildCell("price",{editable:true, mono:true}));
+      tr.appendChild(buildCell("amount",{text:"", mono:true}));
+      tr.appendChild(buildCell("remark",{editable:true}));
+
+      tbody.appendChild(tr);
+      computeAmountRow(tr);
+    }
+    attachGridBehavior(document.getElementById("tblAJMZ"));
+    saveTable("AJMZ");
+  }else{
+    const grade=document.getElementById("defGrade").value||"";
+    const size=document.getElementById("defSize").value||"";
+    const count=Math.max(1,parseInt(document.getElementById("calLotCount").value||"1"));
+    const calLot=document.getElementById("calLot").value.trim()||"";
+    const links=[...document.querySelectorAll("#ajmzLink option:checked")].map(o=>o.value).join(", ");
+
+    const tbody=document.querySelector("#tblCAL tbody");
+    for(let i=0;i<count;i++){
+      const tr=document.createElement("tr");
+
+      [["tx",""],["stone",stone],["status","ADD"],["date",date],["party",party],["deet",deet],["lot",calLot]].forEach(([k,v])=> tr.appendChild(buildCell(k,{text:v})));
+      tr.appendChild(buildCell("grade",{editable:true, text:grade, mono:true}));
+      tr.appendChild(buildCell("desc",{editable:true, mono:true}));
+      tr.appendChild(buildCell("shape",{editable:true, mono:true, plus:"shape"}));
+      tr.appendChild(buildCell("size",{editable:true, text:size, mono:true, plus:"size"}));
+      tr.appendChild(buildCell("cts",{editable:true, mono:true}));
+      tr.appendChild(buildCell("price",{editable:true, mono:true}));
+      tr.appendChild(buildCell("amount",{text:"", mono:true}));
+      tr.appendChild(buildCell("remarks",{editable:true}));
+      tr.appendChild(buildCell("ajmzlinks",{editable:true, text:links, mono:true, plus:"ajmz"}));
+
+      tbody.appendChild(tr);
+      computeAmountRow(tr);
+    }
+    attachGridBehavior(document.getElementById("tblCAL"));
+    saveTable("CAL");
+  }
+});
+
+/* ========= Boot ========= */
+function boot(){
+  if(!localStorage.getItem(STORAGE.SHAPES)) localStorage.setItem(STORAGE.SHAPES, JSON.stringify(["Round","Oval","Cushion","Pear","Marquise"]));
+  if(!localStorage.getItem(STORAGE.SIZES))  localStorage.setItem(STORAGE.SIZES, JSON.stringify(["2×2","3×5","4×6","5×7"]));
+  if(!localStorage.getItem(STORAGE.LINKS))  localStorage.setItem(STORAGE.LINKS, JSON.stringify(["AJMZ1","AJMZ2","AJMZ3","AJMZ4"]));
+  refreshLeftPanelLinks();
+
+  const targetSel=document.getElementById("targetTable");
+  const stoneInput=document.getElementById("stone");
+  if(targetSel.value==="AJMZ"){ stoneInput.value="AJMZ"; } else { stoneInput.value="Calibrate"; }
+  stoneInput.readOnly=true;
+
+  document.getElementById("date").value=new Date().toISOString().slice(0,10);
+
+  repaintTable("AJMZ");
+  repaintTable("CAL");
+}
+boot();
+
+window.addEventListener("load",()=>{
+  refreshLeftPanelLinks();
+  updateTotals("AJMZ");
+  updateTotals("CAL");
+});
+
+// Submit button logic
+document.getElementById("btnSubmit").addEventListener("click", () => {
+  const target = document.getElementById("targetTable").value;
+  submitToFirebase(target === "AJMZ" ? "AJMZ" : "CAL");
+});
+
+</script>
+</body>
+</html>

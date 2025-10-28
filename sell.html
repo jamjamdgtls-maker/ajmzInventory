@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SELL — AJMZ & CALIBRATE</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#F5F5F0; --panel:#E6D8C3; --accent:#5D866C; --accent-2:#C2A68C;
+  --ink:#2f3b33; --muted:#6b776f; --line:#d9cbb1; --shadow:rgba(93,134,108,.18);
+  --soldout:#ffb3b3; --low:#fff2a6; --select:#e9f5ef;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);display:flex;height:100vh;overflow:hidden}
+
+/* Left rail */
+.left{width:260px;min-width:260px;padding:18px;background:linear-gradient(180deg,var(--panel),#efe5cf);border-right:3px solid var(--accent-2);box-shadow:6px 0 20px var(--shadow)}
+.left h1{font-size:18px;color:var(--accent);margin-bottom:12px}
+.left .btn{display:block;width:100%;margin:6px 0;padding:10px;text-align:center;background:var(--accent);color:#fff;border-radius:10px;border:1px solid var(--line);cursor:pointer;font-weight:600;text-decoration:none}
+.left .btn.secondary{background:#fff;color:var(--ink)}
+.left .btn:hover{filter:brightness(.97)}
+.left .note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.3}
+
+/* Right side */
+.right{flex:1;display:flex;flex-direction:column;padding:10px;gap:10px;min-width:0}
+
+/* Top stone switcher + actions */
+.topbar{display:flex;gap:10px;align-items:center}
+.tabbtn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font-weight:600}
+.tabbtn.active{background:var(--accent);color:#fff;border-color:transparent}
+.spacer{flex:1}
+.toolbar{display:flex;gap:8px}
+.btn-sm{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600}
+.btn-sm:hover{background:#f8f6f0}
+
+/* Section (per stone) */
+.section{display:none;flex-direction:column;gap:10px;min-height:0}
+.section.active{display:flex}
+
+/* Panel */
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px var(--shadow);display:flex;flex-direction:column;min-height:0}
+.head{padding:10px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
+.head .righttools{display:flex;gap:10px;align-items:center}
+
+/* Toolbars for each table */
+.table-tools{display:flex;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);background:#fff}
+.search{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;min-width:240px}
+
+/* Tables */
+.table-wrap{flex:1;border-top:1px solid var(--line);overflow:auto}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+th{position:sticky;top:0;background:var(--panel);padding:8px;text-align:left;border-bottom:1px solid var(--line);z-index:1;cursor:pointer;user-select:none}
+th.sort-asc::after{content:" ▲";font-size:11px;color:#666}
+th.sort-desc::after{content:" ▼";font-size:11px;color:#666}
+td{padding:8px;border-bottom:1px solid #e9dec9;vertical-align:top;white-space:pre-line}
+tbody tr:hover{background:#faf8f0}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
+.row-selected{background:var(--select)}
+.h-soldout{background:var(--soldout)}
+.h-low{background:var(--low)}
+
+/* Fixed heights for top/bottom tables */
+.h-half{height:calc(50vh - 120px)} /* fits tools + totals comfortably */
+
+/* Totals bar */
+.totals-bar{display:flex;gap:14px;align-items:center;justify-content:flex-end;padding:8px 10px;border-top:1px solid var(--line);background:#fff;color:#333;font-weight:600}
+.totals-bar .pill{background:#f3efe6;border:1px solid var(--line);border-radius:999px;padding:6px 10px}
+.totals-bar .label{opacity:.7;margin-right:6px}
+
+/* Modals */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.modal{width:min(1000px,95vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;border:1px solid var(--line);padding:16px;box-shadow:0 30px 60px rgba(0,0,0,.3)}
+.modal h3{color:var(--accent);margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.inp{display:flex;flex-direction:column;gap:6px}
+.inp label{font-size:12px;color:var(--muted)}
+.inp input,.inp select,.inp textarea{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:100%}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.btn{padding:10px 14px;border-radius:10px;border:1px solid var(--line);font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);color:#fff;border:none}
+.btn.primary:hover{filter:brightness(.97)}
+.btn.secondary{background:#fff}
+
+/* Toast */
+#toast{position:fixed;right:18px;bottom:18px;background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:12px;display:none;box-shadow:0 10px 24px var(--shadow);font-weight:600}
+</style>
+
+<style>
+/* --- Injected: vertical nav + Option B (no left width) --- */
+.nav-vertical{
+  width:60px;
+  background:#fff;
+  border-right:3px solid var(--accent-2);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:14px 0;
+  gap:20px;
+  box-shadow:6px 0 20px var(--shadow);
+  position:fixed;
+  left:0; top:0; bottom:0;
+  z-index:2000;
+}
+.nav-item{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;position:relative;
+  text-decoration:none;color:var(--ink);
+  background:#fff;border:1px solid var(--line);transition:.25s;
+}
+.nav-item:hover{background:var(--panel);transform:translateX(2px);}
+.nav-item.active{background:var(--accent);color:#fff;border:none;}
+.nav-item::after{
+  content:attr(data-label);
+  position:absolute;left:60px;
+  background:#fff;border:1px solid var(--line);
+  padding:4px 10px;border-radius:8px;white-space:nowrap;
+  box-shadow:0 6px 18px var(--shadow);
+  font-size:12px;opacity:0;pointer-events:none;
+  transform:translateY(5px);transition:.2s;
+}
+.nav-item:hover::after{opacity:1;transform:translateY(0);}
+
+/* Option B: keep .left in DOM but collapse it entirely */
+.left{
+  width:0 !important;
+  min-width:0 !important;
+  padding:0 !important;
+  border-right:none !important;
+  box-shadow:none !important;
+  overflow:hidden !important;
+}
+.left > *{ display:none !important; }
+
+/* Ensure content doesn't go under nav */
+.right{ margin-left:60px !important; }
+</style>
+
+</head>
+<body>
+
+<!-- Injected: left icon vertical navigation -->
+<div class="nav-vertical">
+  <a href="index.html" class="nav-item" data-label="Account">👤</a>
+  <a href="add.html" class="nav-item" data-label="Add">➕</a>
+  <a href="sell.html" class="nav-item active" data-label="Sell">💎</a>
+    <a href="reports.html" class="nav-item active" data-label="Report">📊</a>
+</div>
+
+
+  <!-- LEFT RAIL -->
+  <div class="left">
+    <h1>SELL</h1>
+    <a href="./add.html" class="btn secondary">ADD</a>
+    <a href="./sell.html" class="btn">SELL</a>
+    <p class="note">
+      • Top = ADD, Bottom = SELL (both fixed height).<br>
+      • Amount = CTS × Price (Price falls back to original if blank).<br>
+      • Deleting ADD also deletes all linked SELL. Remaining is auto-updated.
+    </p>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+
+    <!-- Top controls -->
+    <div class="topbar">
+      <button class="tabbtn active" id="btnAJ">AJMZ</button>
+      <button class="tabbtn" id="btnCAL">CALIBRATE</button>
+      <div class="spacer"></div>
+      <div class="toolbar">
+        <button class="btn-sm" id="btnSell">Sell Selected</button>
+        <button class="btn-sm" id="btnUpdate">Update Selected</button>
+        <button class="btn-sm" id="btnDelete">Delete Selected</button>
+      </div>
+    </div>
+
+    <!-- AJMZ SECTION -->
+    <div class="section active" id="secAJ">
+
+      <!-- AJMZ ADD -->
+      <div class="panel">
+        <div class="head">
+          AJMZ — ADD Records
+          <div class="righttools">
+            <input id="searchAJ_ADD" placeholder="Search…" class="search">
+            <button class="btn-sm" id="csvAJ_ADD">Export CSV</button>
+            <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="chkAJAddAll"> Select all</label>
+          </div>
+        </div>
+        <div class="table-wrap h-half">
+          <table id="tblAJ_ADD">
+            <thead>
+              <tr>
+                <th data-nosort></th>
+                <th>Transaction No.</th><th>Status</th><th>Date</th><th>Party</th><th>Deet</th>
+                <th>Lot</th><th>Lot No.</th><th>Description</th><th>Shape</th>
+                <th class="mono">Pcs</th><th class="mono">Cts</th><th class="mono">Price</th><th class="mono">Amount</th><th>Remark</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="totals-bar" id="totAJ_ADD">
+          <span class="pill"><span class="label">Total PCS:</span><span data-total="pcs">0</span></span>
+          <span class="pill"><span class="label">Total CTS:</span><span data-total="cts">0.00</span></span>
+          <span class="pill"><span class="label">Total Amount:</span><span data-total="amt">0.00</span></span>
+        </div>
+      </div>
+
+      <!-- AJMZ SELL -->
+      <div class="panel">
+        <div class="head">
+          AJMZ — SELL Records
+          <div class="righttools">
+            <input id="searchAJ_SELL" placeholder="Search…" class="search">
+            <button class="btn-sm" id="csvAJ_SELL">Export CSV</button>
+            <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="chkAJSellAll"> Select all</label>
+          </div>
+        </div>
+        <div class="table-wrap h-half">
+          <table id="tblAJ_SELL">
+            <thead>
+              <tr>
+                <th data-nosort></th>
+                <th>Transaction No.</th><th>Add Transaction No.</th><th>Date Sold</th><th>Party</th>
+                <th>Lot</th><th>Lot No.</th><th>Description</th><th>Shape</th>
+                <th class="mono">Pcs Sold</th><th class="mono">Cts Sold</th>
+                <th class="mono">Price Used</th><th class="mono">Amount</th><th>Remark</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="totals-bar" id="totAJ_SELL">
+          <span class="pill"><span class="label">Total PCS:</span><span data-total="pcs">0</span></span>
+          <span class="pill"><span class="label">Total CTS:</span><span data-total="cts">0.00</span></span>
+          <span class="pill"><span class="label">Total Amount:</span><span data-total="amt">0.00</span></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CALIBRATE SECTION -->
+    <div class="section" id="secCAL">
+
+      <!-- CAL ADD -->
+      <div class="panel">
+        <div class="head">
+          CALIBRATE — ADD Records
+          <div class="righttools">
+            <input id="searchCAL_ADD" placeholder="Search…" class="search">
+            <button class="btn-sm" id="csvCAL_ADD">Export CSV</button>
+            <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="chkCALAddAll"> Select all</label>
+          </div>
+        </div>
+        <div class="table-wrap h-half">
+          <table id="tblCAL_ADD">
+            <thead>
+              <tr>
+                <th data-nosort></th>
+                <th>Transaction No.</th><th>Status</th><th>Date</th><th>Party</th><th>Deet</th>
+                <th>Lot</th><th>Grade</th><th>Description</th><th>Shape</th><th>Size</th>
+                <th class="mono">CTS</th><th class="mono">Price</th><th class="mono">Amount</th><th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="totals-bar" id="totCAL_ADD">
+          <span class="pill"><span class="label">Total CTS:</span><span data-total="cts">0.00</span></span>
+          <span class="pill"><span class="label">Total Amount:</span><span data-total="amt">0.00</span></span>
+        </div>
+      </div>
+
+      <!-- CAL SELL -->
+      <div class="panel">
+        <div class="head">
+          CALIBRATE — SELL Records
+          <div class="righttools">
+            <input id="searchCAL_SELL" placeholder="Search…" class="search">
+            <button class="btn-sm" id="csvCAL_SELL">Export CSV</button>
+            <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="chkCALSellAll"> Select all</label>
+          </div>
+        </div>
+        <div class="table-wrap h-half">
+          <table id="tblCAL_SELL">
+            <thead>
+              <tr>
+                <th data-nosort></th>
+                <th>Transaction No.</th><th>Add Transaction No.</th><th>Date Sold</th><th>Party</th>
+                <th>Lot</th><th>Grade</th><th>Description</th><th>Shape</th><th>Size</th>
+                <th class="mono">Cts Sold</th><th class="mono">Price Used</th><th class="mono">Amount</th><th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="totals-bar" id="totCAL_SELL">
+          <span class="pill"><span class="label">Total CTS:</span><span data-total="cts">0.00</span></span>
+          <span class="pill"><span class="label">Total Amount:</span><span data-total="amt">0.00</span></span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SELL MODAL -->
+  <div class="modal-backdrop" id="sellModal">
+    <div class="modal">
+      <h3>Sell Items</h3>
+      <div class="grid">
+        <div class="inp"><label>Buyer / Party</label><input id="sellParty"></div>
+        <div class="inp"><label>Date Sold</label><input type="date" id="sellDate"></div>
+      </div>
+      <div style="height:10px"></div>
+      <div id="sellRows" style="max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px"></div>
+      <div class="actions">
+        <button class="btn secondary" id="sellCancel">Cancel</button>
+        <button class="btn primary" id="sellConfirm">Confirm Sell</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPDATE MODAL -->
+  <div class="modal-backdrop" id="updModal">
+    <div class="modal">
+      <h3>Update Selected</h3>
+      <div id="updForm"></div>
+      <div class="actions">
+        <button class="btn secondary" id="updCancel">Cancel</button>
+        <button class="btn primary" id="updSave">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">Saved.</div>
+</body>
+
+<script type="module">
+/* ===========================
+   Firebase
+=========================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, get, push, set, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDkgQ5BCl8LySoiq5CC-HOWJddnJQQa3jQ",
+  authDomain: "poojainventory-ab7fa.firebaseapp.com",
+  databaseURL: "https://poojainventory-ab7fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "poojainventory-ab7fa",
+  storageBucket: "poojainventory-ab7fa.firebasestorage.app",
+  messagingSenderId: "804100194953",
+  appId: "1:804100194953:web:0af84ea1d53c3dde26bc58"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+/* ===========================
+   Helpers
+=========================== */
+const byId = (id)=>document.getElementById(id);
+function toast(msg){ const t=byId("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none",2400); }
+byId("sellDate").value = new Date().toISOString().slice(0,10);
+
+const keyAJ  = v => `${(v.lot||"").trim()}||${(v.lotno||"").trim()}`;
+const keyCAL = v => `${(v.lot||"").trim()}||${(v.grade||"").trim()}`;
+
+/* Tx counter for SELL */
+async function nextSellTx(){
+  const r = ref(db,"/counters/stoneSell");
+  const s = await get(r);
+  const cur = s.exists()? parseInt(s.val(),10):0;
+  const nxt = cur+1;
+  await set(r,nxt);
+  return "SELL-"+String(nxt).padStart(5,"0");
+}
+
+/* ===========================
+   Aggregates (for Remaining)
+=========================== */
+async function aggSellAJ(){
+  const m={}; const snap = await get(ref(db,"/sellAJMZ"));
+  if(!snap.exists()) return m;
+  const val = snap.val()||{};
+  Object.values(val).forEach(v=>{
+    const k = keyAJ(v);
+    if(!m[k]) m[k]={pcs:0,cts:0};
+    m[k].pcs += parseFloat(v.pcs||0);
+    m[k].cts += parseFloat(v.cts||0);
+  });
+  return m;
+}
+async function aggSellCAL(){
+  const m={}; const snap = await get(ref(db,"/sellCalibrate"));
+  if(!snap.exists()) return m;
+  const val = snap.val()||{};
+  Object.values(val).forEach(v=>{
+    const k = keyCAL(v);
+    if(!m[k]) m[k]={cts:0};
+    m[k].cts += parseFloat(v.cts||0);
+  });
+  return m;
+}
+
+/* ===========================
+   Search / Sort / CSV / Totals
+=========================== */
+function enableSearch(searchId, tableId){
+  const inp = byId(searchId);
+  const tb = byId(tableId).querySelector("tbody");
+  inp.addEventListener("input",()=>{
+    const q = inp.value.toLowerCase();
+    [...tb.rows].forEach(r=>{
+      r.style.display = r.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+    updateTotalsFor(tableId);
+  });
+}
+function enableSorting(tableId){
+  const table = byId(tableId);
+  table.querySelectorAll("th").forEach((th,i)=>{
+    if(th.dataset.nosort!==undefined) return;
+    th.addEventListener("click",()=>{
+      const tbody = table.querySelector("tbody");
+      const rows=[...tbody.rows];
+      const asc = !th.classList.contains("sort-asc");
+      table.querySelectorAll("th").forEach(h=>h.classList.remove("sort-asc","sort-desc"));
+      th.classList.add(asc?"sort-asc":"sort-desc");
+      rows.sort((a,b)=>{
+        const A=a.cells[i].textContent.trim();
+        const B=b.cells[i].textContent.trim();
+        const nA=parseFloat(A.replace(/,/g,""));
+        const nB=parseFloat(B.replace(/,/g,""));
+        if(!isNaN(nA) && !isNaN(nB)) return asc? nA-nB : nB-nA;
+        return asc? A.localeCompare(B) : B.localeCompare(A);
+      });
+      rows.forEach(r=>tbody.appendChild(r));
+      updateTotalsFor(tableId);
+    });
+  });
+}
+function enableCSV(btnId, tableId){
+  byId(btnId).onclick=()=>{
+    const rows=[...byId(tableId).rows].filter(r=>r.style.display!=="none");
+    const csv=rows.map(r=>[...r.cells].map(c=>`"${c.textContent.replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download=tableId+".csv"; a.click();
+  };
+}
+const totalMap = {
+  tblAJ_ADD : { bar:"totAJ_ADD",  pcs:10, cts:11, amt:13 },
+  tblAJ_SELL: { bar:"totAJ_SELL", pcs:9 , cts:10, amt:12 },
+  tblCAL_ADD: { bar:"totCAL_ADD",           cts:11, amt:13 },
+  tblCAL_SELL:{ bar:"totCAL_SELL",          cts:10, amt:12 }
+};
+function updateTotalsFor(tableId){
+  const cfg = totalMap[tableId];
+  if(!cfg) return;
+  const bar = byId(cfg.bar);
+  const tbody = byId(tableId).querySelector("tbody");
+  let sPCS=0,sCTS=0,sAMT=0;
+  [...tbody.rows].forEach(r=>{
+    if(r.style.display==="none") return;
+    if(cfg.pcs!==undefined) sPCS += parseFloat(r.cells[cfg.pcs].textContent)||0;
+    if(cfg.cts!==undefined) sCTS += parseFloat(r.cells[cfg.cts].textContent)||0;
+    if(cfg.amt!==undefined) sAMT += parseFloat(r.cells[cfg.amt].textContent)||0;
+  });
+  if(cfg.pcs!==undefined) bar.querySelector("[data-total=pcs]").textContent = sPCS.toFixed(0);
+  if(cfg.cts!==undefined) bar.querySelector("[data-total=cts]").textContent = sCTS.toFixed(2);
+  if(cfg.amt!==undefined) bar.querySelector("[data-total=amt]").textContent = sAMT.toFixed(2);
+}
+function enhanceTable(tbl,search,csv){
+  enableSearch(search,tbl);
+  enableSorting(tbl);
+  enableCSV(csv,tbl);
+}
+
+/* ===========================
+   LOADERS
+=========================== */
+async function loadAJ(){
+  // ---------- ADD ----------
+  const addBody = byId("tblAJ_ADD").querySelector("tbody");
+  addBody.innerHTML = "";
+  const addSnap = await get(ref(db,"/stoneamjz"));
+  const soldAgg = await aggSellAJ();
+
+  if(addSnap.exists()){
+    addSnap.forEach(n=>{
+      const v = n.val(); 
+      if(!v || v.status!=="ADD") return;
+
+      const kKey = keyAJ(v);
+      const sold = soldAgg[kKey] || {pcs:0,cts:0};
+      const oPCS = parseFloat(v.pcs||0);
+      const oCTS = parseFloat(v.cts||0);
+      const rPCS = oPCS - sold.pcs;
+      const rCTS = oCTS - sold.cts;
+
+      const pcsCls = (oPCS>0 ? (rPCS<=0?"h-soldout":(rPCS<=oPCS*0.10?"h-low":"")) : "");
+      const ctsCls = (oCTS>0 ? (rCTS<=0?"h-soldout":(rCTS<=oCTS*0.10?"h-low":"")) : "");
+
+      addBody.insertAdjacentHTML("beforeend", `
+        <tr data-key="${n.key}">
+          <td><input type="checkbox" class="sel-add"></td>
+          <td>${v.tx||""}</td><td>${v.status||""}</td><td>${v.date||""}</td><td>${v.party||""}</td><td>${v.deet||""}</td>
+          <td>${v.lot||""}</td><td>${v.lotno||""}</td><td>${v.desc||""}</td><td>${v.shape||""}</td>
+          <td class="mono ${pcsCls}">${isFinite(oPCS)?oPCS.toFixed(0):""}</td>
+          <td class="mono ${ctsCls}">${isFinite(oCTS)?oCTS.toFixed(2):""}</td>
+          <td class="mono">${v.price||""}</td>
+          <td class="mono">${v.amount||""}</td>
+          <td>${`Remaining: ${Math.max(rPCS,0)} pcs | ${Math.max(rCTS,0).toFixed(2)} cts`}</td>
+        </tr>
+      `);
+    });
+  }
+
+  // ---------- SELL (ALL rows, newest first) ----------
+  const sellBody = byId("tblAJ_SELL").querySelector("tbody");
+  sellBody.innerHTML = "";
+  const sSnap = await get(ref(db,"/sellAJMZ"));
+  const rows = [];
+
+  if(sSnap.exists()){
+    Object.entries(sSnap.val()||{}).forEach(([k,v])=>{
+      if(v && v.tx) rows.push({key:k, ...v});
+    });
+    rows.sort((a,b)=> (parseInt((b.tx||"").replace(/\D/g,""))||0) - (parseInt((a.tx||"").replace(/\D/g,""))||0)).reverse();
+  }
+
+  rows.forEach(h=>{
+    sellBody.insertAdjacentHTML("beforeend", `
+      <tr data-key="${h.key}">
+        <td><input type="checkbox" class="sel-sell"></td>
+        <td>${h.tx||""}</td><td>${h.addTx||""}</td><td>${h.date||""}</td><td>${h.party||""}</td>
+        <td>${h.lot||""}</td><td>${h.lotno||""}</td>
+        <td>${h.description||""}</td><td>${h.shape||""}</td>
+        <td class="mono">${isFinite(h.pcs)?h.pcs:""}</td>
+        <td class="mono">${isFinite(h.cts)?Number(h.cts).toFixed(2):""}</td>
+        <td class="mono">${isFinite(h.price)?h.price:""}</td>
+        <td class="mono">${isFinite(h.amount)?h.amount:""}</td>
+        <td>${h.remarks||""}</td>
+      </tr>
+    `);
+  });
+
+  // refresh subtotals
+  updateTotalsFor("tblAJ_ADD");
+  updateTotalsFor("tblAJ_SELL");
+
+  // reset select-all toggles
+  byId("chkAJAddAll").checked = false;
+  byId("chkAJSellAll").checked = false;
+}
+
+async function loadCAL(){
+  // ---------- ADD ----------
+  const addBody = byId("tblCAL_ADD").querySelector("tbody");
+  addBody.innerHTML = "";
+  const addSnap = await get(ref(db,"/stonecalibrate"));
+  const soldAgg = await aggSellCAL();
+
+  if(addSnap.exists()){
+    addSnap.forEach(n=>{
+      const v = n.val(); 
+      if(!v || v.status!=="ADD") return;
+
+      const kKey = keyCAL(v);
+      const sold = soldAgg[kKey] || {cts:0};
+      const oCTS = parseFloat(v.cts||0);
+      const rCTS = oCTS - sold.cts;
+      const ctsCls = (oCTS>0 ? (rCTS<=0?"h-soldout":(rCTS<=oCTS*0.10?"h-low":"")) : "");
+
+      addBody.insertAdjacentHTML("beforeend", `
+        <tr data-key="${n.key}">
+          <td><input type="checkbox" class="sel-add"></td>
+          <td>${v.tx||""}</td><td>${v.status||""}</td><td>${v.date||""}</td><td>${v.party||""}</td><td>${v.deet||""}</td>
+          <td>${v.lot||""}</td><td>${v.grade||""}</td><td>${v.desc||""}</td><td>${v.shape||""}</td><td>${v.size||""}</td>
+          <td class="mono ${ctsCls}">${isFinite(oCTS)?oCTS.toFixed(2):""}</td>
+          <td class="mono">${v.price||""}</td><td class="mono">${v.amount||""}</td>
+          <td>${`Remaining: ${Math.max(rCTS,0).toFixed(2)} cts`}</td>
+        </tr>
+      `);
+    });
+  }
+
+  // ---------- SELL (ALL rows, newest first) ----------
+  const sellBody = byId("tblCAL_SELL").querySelector("tbody");
+  sellBody.innerHTML = "";
+  const sSnap = await get(ref(db,"/sellCalibrate"));
+  const rows = [];
+
+  if(sSnap.exists()){
+    Object.entries(sSnap.val()||{}).forEach(([k,v])=>{
+      if(v && v.tx) rows.push({key:k, ...v});
+    });
+    rows.sort((a,b)=> (parseInt((b.tx||"").replace(/\D/g,""))||0) - (parseInt((a.tx||"").replace(/\D/g,""))||0)).reverse();
+  }
+
+  rows.forEach(h=>{
+    sellBody.insertAdjacentHTML("beforeend", `
+      <tr data-key="${h.key}">
+        <td><input type="checkbox" class="sel-sell"></td>
+        <td>${h.tx||""}</td><td>${h.addTx||""}</td><td>${h.date||""}</td><td>${h.party||""}</td>
+        <td>${h.lot||""}</td><td>${h.grade||""}</td><td>${h.description||""}</td><td>${h.shape||""}</td><td>${h.size||""}</td>
+        <td class="mono">${isFinite(h.cts)?Number(h.cts).toFixed(2):""}</td>
+        <td class="mono">${isFinite(h.price)?h.price:""}</td>
+        <td class="mono">${isFinite(h.amount)?h.amount:""}</td>
+        <td>${h.remarks||""}</td>
+      </tr>
+    `);
+  });
+
+  updateTotalsFor("tblCAL_ADD");
+  updateTotalsFor("tblCAL_SELL");
+
+  byId("chkCALAddAll").checked = false;
+  byId("chkCALSellAll").checked = false;
+}
+
+/* ===========================
+   TAB SWITCHING (load only active when shown)
+=========================== */
+byId("btnAJ").onclick = async ()=>{
+  byId("btnAJ").classList.add("active");
+  byId("btnCAL").classList.remove("active");
+  byId("secAJ").classList.add("active");
+  byId("secCAL").classList.remove("active");
+  await loadAJ();
+};
+byId("btnCAL").onclick = async ()=>{
+  byId("btnCAL").classList.add("active");
+  byId("btnAJ").classList.remove("active");
+  byId("secCAL").classList.add("active");
+  byId("secAJ").classList.remove("active");
+  await loadCAL();
+};
+
+/* ===========================
+   Select All toggles
+=========================== */
+byId("chkAJAddAll").onclick = ()=>{ byId("tblAJ_ADD").querySelectorAll(".sel-add").forEach(c=>c.checked = byId("chkAJAddAll").checked); };
+byId("chkAJSellAll").onclick= ()=>{ byId("tblAJ_SELL").querySelectorAll(".sel-sell").forEach(c=>c.checked = byId("chkAJSellAll").checked); };
+byId("chkCALAddAll").onclick= ()=>{ byId("tblCAL_ADD").querySelectorAll(".sel-add").forEach(c=>c.checked = byId("chkCALAddAll").checked); };
+byId("chkCALSellAll").onclick= ()=>{ byId("tblCAL_SELL").querySelectorAll(".sel-sell").forEach(c=>c.checked = byId("chkCALSellAll").checked); };
+
+/* ===========================
+   Selection helper
+=========================== */
+function gatherSelected(tableId, type){
+  return [...byId(tableId).querySelectorAll(`tbody input.sel-${type}:checked`)]
+    .map(inp => ({ key: inp.closest("tr").dataset.key, tr: inp.closest("tr") }));
+}
+
+/* ===========================
+   SELL FLOW (Remaining-only remarks)
+=========================== */
+let pendingSellItems = [];
+
+byId("btnSell").onclick = async ()=>{
+  const isAJ = byId("secAJ").classList.contains("active");
+  const list = isAJ ? gatherSelected("tblAJ_ADD","add") : gatherSelected("tblCAL_ADD","add");
+  if(!list.length) return toast("Select ADD rows to sell.");
+
+  pendingSellItems = [];
+
+  for(const {key} of list){
+    if(isAJ){
+      const snap = await get(ref(db,"/stoneamjz/"+key));
+      const a = snap.val()||{};
+      pendingSellItems.push({
+        stone:"AJMZ", key, tx:a.tx, lot:a.lot, lotno:a.lotno, desc:a.desc, shape:a.shape,
+        origPrice:parseFloat(a.price)||0
+      });
+    }else{
+      const snap = await get(ref(db,"/stonecalibrate/"+key));
+      const a = snap.val()||{};
+      pendingSellItems.push({
+        stone:"CAL", key, tx:a.tx, lot:a.lot, grade:a.grade, desc:a.desc, shape:a.shape, size:a.size,
+        origPrice:parseFloat(a.price)||0
+      });
+    }
+  }
+
+  // Render modal rows
+  const rows = pendingSellItems.map((it,i)=>`
+    <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div class="grid-4">
+        <div class="inp"><label>Line</label><input value="${it.tx} — ${it.lot} / ${(it.lotno||it.grade)}" disabled></div>
+        <div class="inp"><label>PCS (optional)</label><input data-i="${i}" data-f="pcs" type="number" step="1" min="0"></div>
+        <div class="inp"><label>CTS</label><input data-i="${i}" data-f="cts" type="number" step="0.01" min="0"></div>
+        <div class="inp"><label>Price (per CT)</label><input data-i="${i}" data-f="price" type="number" step="0.01" min="0" placeholder="blank = ${it.origPrice}"></div>
+      </div>
+      <div class="inp"><label>Remark</label><input data-i="${i}" data-f="remarks"></div>
+    </div>
+  `).join("");
+
+  byId("sellRows").innerHTML = rows;
+  const sd = byId("sellDate");
+  if(sd && !sd.value) sd.value = new Date().toISOString().slice(0,10);
+  byId("sellModal").style.display = "flex";
+};
+
+byId("sellCancel").onclick = ()=> byId("sellModal").style.display="none";
+
+byId("sellConfirm").onclick = async ()=>{
+  const party = (byId("sellParty").value || "").trim();
+  const date  = byId("sellDate").value || new Date().toISOString().slice(0,10);
+
+  document.querySelectorAll("#sellRows input[data-f]").forEach(inp=>{
+    const i = +inp.dataset.i, f=inp.dataset.f;
+    pendingSellItems[i][f] = inp.value;
+  });
+
+  for(const it of pendingSellItems){
+    const tx = await nextSellTx();
+    const price = parseFloat(it.price)||it.origPrice||0;
+    const cts   = parseFloat(it.cts)||0;
+    const pcs   = parseFloat(it.pcs)||0;
+    const amount= cts*price;
+
+    if(it.stone==="AJMZ"){
+      await push(ref(db,"/sellAJMZ"),{
+        tx, addTx: it.tx, date, party,
+        lot: it.lot, lotno: it.lotno,
+        description: it.desc, shape: it.shape,
+        pcs, cts, price, amount, remarks: it.remarks||""
+      });
+      // Update ADD remark to Remaining only
+      const prevSnap = await get(ref(db,"/stoneamjz/"+it.key));
+      const prev = prevSnap.val()||{};
+      const sold = (await aggSellAJ())[keyAJ(prev)] || {pcs:0,cts:0};
+      const rPCS = (parseFloat(prev.pcs)||0) - sold.pcs;
+      const rCTS = (parseFloat(prev.cts)||0) - sold.cts;
+      await update(ref(db,"/stoneamjz/"+it.key),{
+        remark:`Remaining: ${Math.max(rPCS,0)} pcs | ${Math.max(rCTS,0).toFixed(2)} cts`
+      });
+    }else{
+      await push(ref(db,"/sellCalibrate"),{
+        tx, addTx: it.tx, date, party,
+        lot: it.lot, grade: it.grade,
+        description: it.desc, shape: it.shape, size: it.size,
+        cts, price, amount, remarks: it.remarks||""
+      });
+      // Update ADD remarks to Remaining only
+      const prevSnap = await get(ref(db,"/stonecalibrate/"+it.key));
+      const prev = prevSnap.val()||{};
+      const sold = (await aggSellCAL())[keyCAL(prev)] || {cts:0};
+      const rCTS = (parseFloat(prev.cts)||0) - sold.cts;
+      await update(ref(db,"/stonecalibrate/"+it.key),{
+        remarks:`Remaining: ${Math.max(rCTS,0).toFixed(2)} cts`
+      });
+    }
+  }
+
+  byId("sellModal").style.display = "none";
+  toast("✅ Sell recorded");
+
+  if(byId("secAJ").classList.contains("active")) await loadAJ();
+  else await loadCAL();
+};
+
+/* ===========================
+   UPDATE FLOW (ADD limited, SELL full)
+=========================== */
+let updTargets=[];
+
+byId("btnUpdate").onclick = ()=>{
+  const isAJ = byId("secAJ").classList.contains("active");
+  const addSel = isAJ ? gatherSelected("tblAJ_ADD","add") : gatherSelected("tblCAL_ADD","add");
+  const sellSel = isAJ ? gatherSelected("tblAJ_SELL","sell") : gatherSelected("tblCAL_SELL","sell");
+  if(!addSel.length && !sellSel.length) return toast("Select ADD or SELL rows to update.");
+
+  updTargets=[]; 
+  const forms=[];
+
+  // ADD forms (PCS/CTS uneditable)
+  for(const {key,tr} of addSel){
+    const t=[...tr.cells].map(c=>c.textContent.trim());
+    if(isAJ){
+      const d={kind:"ADD_AJ", key, tx:t[1], status:t[2], date:t[3], party:t[4], deet:t[5], lot:t[6], lotno:t[7], desc:t[8], shape:t[9], price:t[12], amount:t[13], remark:t[14]};
+      updTargets.push(d);
+      forms.push(`
+      <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <h4>Update AJMZ ADD — ${d.tx}</h4>
+        <div class="grid-3">
+          <div class="inp"><label>Status</label><input data-i="${updTargets.length-1}" data-f="status" value="${d.status}"></div>
+          <div class="inp"><label>Date</label><input data-i="${updTargets.length-1}" data-f="date" value="${d.date}"></div>
+          <div class="inp"><label>Party</label><input data-i="${updTargets.length-1}" data-f="party" value="${d.party}"></div>
+          <div class="inp"><label>Deet</label><input data-i="${updTargets.length-1}" data-f="deet" value="${d.deet}"></div>
+          <div class="inp"><label>Description</label><input data-i="${updTargets.length-1}" data-f="desc" value="${d.desc}"></div>
+          <div class="inp"><label>Shape</label><input data-i="${updTargets.length-1}" data-f="shape" value="${d.shape}"></div>
+          <div class="inp"><label>Price</label><input data-i="${updTargets.length-1}" data-f="price" value="${d.price}"></div>
+          <div class="inp"><label>Amount</label><input data-i="${updTargets.length-1}" data-f="amount" value="${d.amount}"></div>
+          <div class="inp" style="grid-column:1/-1"><label>Remark</label><input data-i="${updTargets.length-1}" data-f="remark" value="${d.remark}"></div>
+        </div>
+      </div>`);
+    }else{
+      const d={kind:"ADD_CAL", key, tx:t[1], status:t[2], date:t[3], party:t[4], deet:t[5], lot:t[6], grade:t[7], desc:t[8], shape:t[9], size:t[10], price:t[12], amount:t[13], remarks:t[14]};
+      updTargets.push(d);
+      forms.push(`
+      <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <h4>Update CAL ADD — ${d.tx}</h4>
+        <div class="grid-3">
+          <div class="inp"><label>Status</label><input data-i="${updTargets.length-1}" data-f="status" value="${d.status}"></div>
+          <div class="inp"><label>Date</label><input data-i="${updTargets.length-1}" data-f="date" value="${d.date}"></div>
+          <div class="inp"><label>Party</label><input data-i="${updTargets.length-1}" data-f="party" value="${d.party}"></div>
+          <div class="inp"><label>Deet</label><input data-i="${updTargets.length-1}" data-f="deet" value="${d.deet}"></div>
+          <div class="inp"><label>Description</label><input data-i="${updTargets.length-1}" data-f="desc" value="${d.desc}"></div>
+          <div class="inp"><label>Shape</label><input data-i="${updTargets.length-1}" data-f="shape" value="${d.shape}"></div>
+          <div class="inp"><label>Size</label><input data-i="${updTargets.length-1}" data-f="size" value="${d.size}"></div>
+          <div class="inp"><label>Price</label><input data-i="${updTargets.length-1}" data-f="price" value="${d.price}"></div>
+          <div class="inp"><label>Amount</label><input data-i="${updTargets.length-1}" data-f="amount" value="${d.amount}"></div>
+          <div class="inp" style="grid-column:1/-1"><label>Remarks</label><input data-i="${updTargets.length-1}" data-f="remarks" value="${d.remarks}"></div>
+        </div>
+      </div>`);
+    }
+  }
+
+  // SELL forms
+  for(const {key,tr} of sellSel){
+    const t=[...tr.cells].map(c=>c.textContent.trim());
+    if(isAJ){
+      const d={kind:"SELL_AJ", key, tx:t[1], addTx:t[2], date:t[3], party:t[4], lot:t[5], lotno:t[6], description:t[7], shape:t[8], pcs:t[9], cts:t[10], price:t[11], remarks:t[13]};
+      updTargets.push(d);
+      forms.push(`
+      <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <h4>Update AJMZ SELL — ${d.tx}</h4>
+        <div class="grid-3">
+          <div class="inp"><label>Date</label><input data-i="${updTargets.length-1}" data-f="date" value="${d.date}"></div>
+          <div class="inp"><label>Party</label><input data-i="${updTargets.length-1}" data-f="party" value="${d.party}"></div>
+          <div class="inp"><label>PCS</label><input data-i="${updTargets.length-1}" data-f="pcs" value="${d.pcs}"></div>
+          <div class="inp"><label>CTS</label><input data-i="${updTargets.length-1}" data-f="cts" value="${d.cts}"></div>
+          <div class="inp"><label>Price (per CT)</label><input data-i="${updTargets.length-1}" data-f="price" value="${d.price}"></div>
+          <div class="inp"><label>Remarks</label><input data-i="${updTargets.length-1}" data-f="remarks" value="${d.remarks}"></div>
+        </div>
+      </div>`);
+    }else{
+      const d={kind:"SELL_CAL", key, tx:t[1], addTx:t[2], date:t[3], party:t[4], lot:t[5], grade:t[6], description:t[7], shape:t[8], size:t[9], cts:t[10], price:t[11], remarks:t[13]};
+      updTargets.push(d);
+      forms.push(`
+      <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <h4>Update CAL SELL — ${d.tx}</h4>
+        <div class="grid-3">
+          <div class="inp"><label>Date</label><input data-i="${updTargets.length-1}" data-f="date" value="${d.date}"></div>
+          <div class="inp"><label>Party</label><input data-i="${updTargets.length-1}" data-f="party" value="${d.party}"></div>
+          <div class="inp"><label>CTS</label><input data-i="${updTargets.length-1}" data-f="cts" value="${d.cts}"></div>
+          <div class="inp"><label>Price (per CT)</label><input data-i="${updTargets.length-1}" data-f="price" value="${d.price}"></div>
+          <div class="inp"><label>Remarks</label><input data-i="${updTargets.length-1}" data-f="remarks" value="${d.remarks}"></div>
+        </div>
+      </div>`);
+    }
+  }
+
+  byId("updForm").innerHTML = forms.join('<hr style="margin:12px 0;border:none;border-top:1px solid var(--line)">');
+  byId("updModal").style.display="flex";
+};
+
+byId("updCancel").onclick=()=>byId("updModal").style.display="none";
+byId("updSave").onclick = async ()=>{
+  // gather edits
+  document.querySelectorAll('#updForm [data-i]').forEach(inp=>{
+    const i=+inp.dataset.i, f=inp.dataset.f;
+    updTargets[i][f]=inp.value;
+  });
+
+  for(const d of updTargets){
+    if(d.kind==="ADD_AJ"){
+      await update(ref(db,"/stoneamjz/"+d.key),{
+        status:d.status,date:d.date,party:d.party,deet:d.deet,desc:d.desc,shape:d.shape,price:d.price,amount:d.amount,remark:d.remark
+      });
+    } else if(d.kind==="ADD_CAL"){
+      await update(ref(db,"/stonecalibrate/"+d.key),{
+        status:d.status,date:d.date,party:d.party,deet:d.deet,desc:d.desc,shape:d.shape,size:d.size,price:d.price,amount:d.amount,remarks:d.remarks
+      });
+    } else if(d.kind==="SELL_AJ"){
+      const price=parseFloat(d.price)||0, cts=parseFloat(d.cts)||0, pcs=parseFloat(d.pcs)||0;
+      await update(ref(db,"/sellAJMZ/"+d.key),{date:d.date,party:d.party,pcs,cts,price,amount:(cts*price),remarks:d.remarks});
+      // recompute remaining on linked ADD
+      const add = await findAddByTx("AJMZ", d.addTx);
+      if(add){ const sold=(await aggSellAJ())[keyAJ(add)]||{pcs:0,cts:0};
+        const rPCS = (parseFloat(add.pcs)||0)-sold.pcs;
+        const rCTS = (parseFloat(add.cts)||0)-sold.cts;
+        await update(ref(db,"/stoneamjz/"+add._key),{remark:`Remaining: ${Math.max(rPCS,0)} pcs | ${Math.max(rCTS,0).toFixed(2)} cts`});
+      }
+    } else if(d.kind==="SELL_CAL"){
+      const price=parseFloat(d.price)||0, cts=parseFloat(d.cts)||0;
+      await update(ref(db,"/sellCalibrate/"+d.key),{date:d.date,party:d.party,cts,price,amount:(cts*price),remarks:d.remarks});
+      const add = await findAddByTx("CAL", d.addTx);
+      if(add){ const sold=(await aggSellCAL())[keyCAL(add)]||{cts:0};
+        const rCTS = (parseFloat(add.cts)||0)-sold.cts;
+        await update(ref(db,"/stonecalibrate/"+add._key),{remarks:`Remaining: ${Math.max(rCTS,0).toFixed(2)} cts`});
+      }
+    }
+  }
+
+  byId("updModal").style.display="none";
+  toast("✅ Updated");
+
+  if(byId("secAJ").classList.contains("active")) await loadAJ();
+  else await loadCAL();
+};
+
+// Helper: find ADD by addTx (tx)
+async function findAddByTx(stone, tx){
+  if(!tx) return null;
+  if(stone==="AJMZ"){
+    const s = await get(ref(db,"/stoneamjz"));
+    if(s.exists()){
+      let found=null;
+      s.forEach(n=>{ const v=n.val(); if(v && v.tx===tx) found={...v,_key:n.key}; });
+      return found;
+    }
+  }else{
+    const s = await get(ref(db,"/stonecalibrate"));
+    if(s.exists()){
+      let found=null;
+      s.forEach(n=>{ const v=n.val(); if(v && v.tx===tx) found={...v,_key:n.key}; });
+      return found;
+    }
+  }
+  return null;
+}
+
+/* ===========================
+   DELETE (with Cascade)
+=========================== */
+byId("btnDelete").onclick = async ()=>{
+  const isAJ = byId("secAJ").classList.contains("active");
+  const adds = isAJ ? gatherSelected("tblAJ_ADD","add") : gatherSelected("tblCAL_ADD","add");
+  const sells = isAJ ? gatherSelected("tblAJ_SELL","sell") : gatherSelected("tblCAL_SELL","sell");
+
+  if(!adds.length && !sells.length) return toast("Select rows to delete.");
+  if(!confirm("Delete selected record(s)?\nDeleting an ADD removes all its SELL records.")) return;
+
+  // Delete SELL records directly selected
+  for(const s of sells){
+    if(isAJ) await remove(ref(db,"/sellAJMZ/"+s.key));
+    else await remove(ref(db,"/sellCalibrate/"+s.key));
+  }
+
+  // Delete ADD + all linked SELL
+  for(const a of adds){
+    const lot = a.tr.children[6].textContent.trim();
+    const id2 = a.tr.children[7].textContent.trim(); // lotno or grade
+    if(isAJ){
+      await remove(ref(db,"/stoneamjz/"+a.key));
+      const sSnap = await get(ref(db,"/sellAJMZ"));
+      if(sSnap.exists()){
+        const ops=[];
+        Object.entries(sSnap.val()).forEach(([k,v])=>{
+          if((v.lot||"").trim()===lot && (v.lotno||"").trim()===id2) ops.push(remove(ref(db,"/sellAJMZ/"+k)));
+        });
+        await Promise.all(ops);
+      }
+    }else{
+      await remove(ref(db,"/stonecalibrate/"+a.key));
+      const sSnap = await get(ref(db,"/sellCalibrate"));
+      if(sSnap.exists()){
+        const ops=[];
+        Object.entries(sSnap.val()).forEach(([k,v])=>{
+          if((v.lot||"").trim()===lot && (v.grade||"").trim()===id2) ops.push(remove(ref(db,"/sellCalibrate/"+k)));
+        });
+        await Promise.all(ops);
+      }
+    }
+  }
+
+  toast("🗑️ Deleted");
+
+  if(byId("secAJ").classList.contains("active")) await loadAJ();
+  else await loadCAL();
+};
+
+/* ===========================
+   Enhance tables (search/sort/csv)
+=========================== */
+enhanceTable("tblAJ_ADD","searchAJ_ADD","csvAJ_ADD");
+enhanceTable("tblAJ_SELL","searchAJ_SELL","csvAJ_SELL");
+enhanceTable("tblCAL_ADD","searchCAL_ADD","csvCAL_ADD");
+enhanceTable("tblCAL_SELL","searchCAL_SELL","csvCAL_SELL");
+
+/* ===========================
+   Boot
+=========================== */
+(async function(){
+  await loadAJ(); // default to AJMZ
+})();
+</script>
+</html>
