@@ -796,6 +796,13 @@ function refreshLeftPanelLinks(){
   }
 }
 
+/* Double-click to populate Lot from AJMZ Link list */
+document.getElementById("ajmzLink").addEventListener("dblclick", (e)=>{
+  if(e.target.tagName === "OPTION"){
+    document.getElementById("calLot").value = e.target.value;
+  }
+});
+
 /* ========= + Picker ========= */
 const picker = document.getElementById("valuePicker");
 const pickerTitle = document.getElementById("pickerTitle");
@@ -1069,4 +1076,3 @@ document.getElementById("btnSubmit").addEventListener("click", () => {
 </script>
 </body>
 </html>
-
