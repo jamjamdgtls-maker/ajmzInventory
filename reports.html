@@ -3,333 +3,1034 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Inventory Report — AJMZ & CALIBRATE</title>
+<title>Inventory Report — ADD ➜ SELL (Apple-Clean · Collapsible Summary · Stone Filter)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+
 <style>
 :root{
-  --bg:#F5F5F0; --panel:#E6D8C3; --accent:#5D866C; --accent-2:#C2A68C;
-  --ink:#2f3b33; --muted:#6b776f; --line:#d9cbb1; --shadow:rgba(93,134,108,.18);
+  /* Neutral “Apple finance” palette */
+  --bg:#F7F7F9;
+  --paper:#FFFFFF;
+  --ink:#1F2937;
+  --muted:#6B7280;
+  --line:#E5E7EB;
+  --line-strong:#D1D5DB;
+  --accent:#2F6E4E;           /* brand green */
+  --accent-2:#C2A68C;
+
+  --danger:#B00020;
+  --success:#0F7B3E;
+  --sell-bg:#FFF3F3;
+
+  --shadow-sm:0 1px 2px rgba(0,0,0,.06);
+  --shadow:0 1px 2px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.04);
+
+  --scrollH:560px;
+  --radius:12px;
+  --anim:.28s;
+
+  /* Sticky “freeze panes” widths */
+  --col1:56px;   /* # */
+  --col2:140px;  /* TX */
+  --col3:120px;  /* Date */
 }
+
+/* Reset/layout */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  font-family:Inter,system-ui;background:var(--bg);color:var(--ink);
-  display:flex;height:100vh;overflow:hidden;
+  font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  background:var(--bg); color:var(--ink);
+  display:flex; height:100vh; overflow:hidden;
 }
 
-/* NAV (same feel as sell.html) */
+/* Left nav (keep as-is) */
 .nav-vertical{
-  width:60px;background:#fff;border-right:3px solid var(--accent-2);
-  display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:20px;
-  box-shadow:6px 0 20px var(--shadow);position:fixed;left:0;top:0;bottom:0;z-index:2000
+  width:62px; background:#fff; border-right:3px solid var(--accent-2);
+  display:flex; flex-direction:column; align-items:center; gap:18px; padding:14px 0;
+  position:fixed; left:0; top:0; bottom:0; z-index:2000; box-shadow:6px 0 24px rgba(0,0,0,.06);
 }
 .nav-item{
-  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-  font-size:22px;text-decoration:none;color:var(--ink);
-  background:#fff;border:1px solid var(--line);cursor:pointer;font-weight:600
+  width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  font-size:22px; text-decoration:none; color:var(--ink);
+  background:#fff; border:1px solid var(--line-strong); cursor:pointer; font-weight:600;
+  transition:transform .08s ease, background .15s ease;
 }
-.nav-item.active{background:var(--accent);color:#fff;border-color:transparent}
+.nav-item:hover{transform:translateY(-1px)}
+.nav-item.active{background:var(--accent); color:#fff; border-color:transparent}
 
-/* PAGE */
-.right{flex:1;display:flex;flex-direction:column;margin-left:60px;padding:10px;gap:12px;min-width:0}
-.header{display:flex;align-items:center;gap:10px}
-.title{font-weight:700;color:var(--accent)}
+/* Right area */
+.right{flex:1; margin-left:62px; min-width:0; padding:12px; display:flex; flex-direction:column; gap:12px}
+.header{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.title{font-weight:800; color:var(--accent); letter-spacing:.2px}
 .spacer{flex:1}
-.btn{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:600;cursor:pointer}
-.btn.primary{background:var(--accent);color:#fff;border:none}
-
-/* PANELS */
-.panel{
-  background:#fff;border:1px solid var(--line);border-radius:14px;
-  box-shadow:0 8px 24px var(--shadow);display:flex;flex-direction:column;padding:12px;gap:10px
+.btn{
+  padding:8px 12px; border-radius:10px; border:1px solid var(--line-strong);
+  background:#fff; font-weight:600; cursor:pointer; white-space:nowrap; color:var(--ink);
+  transition:transform .06s ease, box-shadow .12s ease, background .12s ease, color .12s ease, border-color .12s ease;
 }
-.head{font-weight:600;color:var(--accent)}
+.btn:hover{transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,0,0,.06)}
+.btn:active{transform:translateY(0); box-shadow:none}
+.btn.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
+.btn.segment{border-radius:8px; padding:6px 10px; font-size:12px}
+.btn.pill{border-radius:999px; padding:5px 10px; font-size:11px}
+.btn.active{background:#EEF5F0; color:#1E4A34; border-color:#B9D4C4}
+.btn.small{padding:6px 9px; font-size:12px}
 
-/* SLICER BAR (Google Sheets style) */
-.slicer-bar{display:flex;flex-wrap:wrap;gap:8px}
-.slicer{
-  position:relative;
+/* KPI bar */
+.kpi-bar{
+  display:grid; grid-template-columns:repeat(6, minmax(140px,1fr)); gap:10px;
 }
-.slicer-btn{
-  display:flex;align-items:center;gap:6px;
-  padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font-weight:600;font-size:12px
+.kpi{
+  background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow);
 }
-.slicer-btn:after{content:"▾";opacity:.8}
-.slicer-menu{
-  position:absolute;top:44px;left:0;z-index:3000;width:260px;
-  background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 28px var(--shadow);
-  display:none;flex-direction:column;max-height:340px;overflow:hidden;
+.kpi .label{font-size:11px; color:var(--muted); margin-bottom:4px}
+.kpi .value{font-size:14px; font-weight:700}
+
+/* Panel */
+.panel{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px}
+.panel .head{font-weight:700; color:var(--accent); padding:10px 12px 0 12px}
+
+/* Summary controls */
+.summary-controls{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:10px 12px 6px 12px
 }
-.slicer.open .slicer-menu{display:flex}
-.slicer-head{padding:8px;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center}
-.slicer-head input{flex:1;padding:6px;border:1px solid var(--line);border-radius:8px;font-size:12px}
-.slicer-actions{padding:6px 8px;display:flex;gap:8px}
-.slicer-actions .a{font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline}
-.slicer-list{overflow:auto}
-.slicer-item{display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #f1eadb;font-size:12px}
-.slicer-foot{padding:8px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.segmented{display:flex; gap:6px; flex-wrap:wrap}
+.searchbox{
+  flex:1; min-width:240px; padding:8px 10px; border:1px solid var(--line-strong); border-radius:10px; font-size:12px; background:#fff
+}
+.datebox{display:flex; gap:6px; align-items:center; font-size:12px}
+.datebox input{padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px; font-size:12px; background:#fff}
+.stone-row{display:flex; gap:6px; align-items:center; padding:0 12px 6px 12px}
+.stone-row .label{font-size:12px; color:var(--muted)}
 
-/* DATE BOX */
-.date-box{display:flex;gap:6px;align-items:center}
-.date-box input{padding:6px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+/* Collapsible summary */
+.collapse{display:none}
+.collapse.show{display:block}
+.summary-title{font-size:12px;color:var(--muted);padding:0 12px}
+#summaryOutput{
+  background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  margin:0 12px 10px 12px; border-radius:8px; padding:8px 8px; font-size:12px; overflow:auto; max-height:260px
+}
+.pills{display:flex; gap:8px; flex-wrap:wrap; padding:0 12px 12px 12px}
+.pill{background:#FAFAFB; border:1px solid var(--line); border-radius:999px; padding:4px 8px; font-size:12px; display:inline-flex; align-items:center; gap:6px}
+.pill .x{cursor:pointer; width:16px; height:16px; border-radius:999px; background:#ECEFF3; display:inline-flex; align-items:center; justify-content:center; font-weight:800}
 
-/* PILLS (optional quick view) */
-.pills{display:flex;gap:8px;flex-wrap:wrap}
-.pill{background:#f3efe6;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px}
-.pill .x{cursor:pointer;margin-left:6px}
+/* Table container */
+.table-wrap{
+  border:1px solid var(--line); border-radius:var(--radius); overflow:auto; max-height:var(--scrollH);
+  -webkit-overflow-scrolling:touch; background:var(--paper); box-shadow:var(--shadow);
+}
+.table-wrap::-webkit-scrollbar{height:8px;width:8px}
+.table-wrap::-webkit-scrollbar-thumb{background:#D7DCE2;border-radius:8px}
+.table-wrap::-webkit-scrollbar-track{background:#F1F3F6;border-radius:8px}
 
-/* TABLES */
-.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
-th{background:var(--panel);padding:8px;text-align:left;position:sticky;top:0;border-bottom:1px solid var(--line)}
-td{padding:8px;border-bottom:1px solid #e9dec9;text-align:left}
-tbody tr:hover{background:#faf8f0}
-.mono{font-family:ui-monospace,Consolas;text-align:right}
+/* Table */
+table{
+  width:100%; border-collapse:separate; border-spacing:0; font-size:12px; table-layout:auto; min-width:1380px; color:var(--ink);
+}
+thead th{
+  background:#FBFBFD; color:#374151; font-weight:700; padding:7px 8px; text-align:left; position:sticky; top:0; z-index:3; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+}
 
-/* Row coloring for clarity */
-tr.sell td{color:#9b2c2c}     /* sell rows reddish */
-tr.add td{color:#2f3b33}
+/* Sticky columns: #, TX, Date */
+.sticky-col-1,.sticky-col-2,.sticky-col-3{position:sticky; z-index:3; background:inherit}
+thead .sticky-col-1, thead .sticky-col-2, thead .sticky-col-3{background:#FBFBFD; z-index:4}
+.sticky-col-1{left:0; min-width:var(--col1); width:var(--col1); border-right:1px solid var(--line)}
+.sticky-col-2{left:var(--col1); min-width:var(--col2); width:var(--col2); border-right:1px solid var(--line)}
+.sticky-col-3{left:calc(var(--col1) + var(--col2)); min-width:var(--col3); width:var(--col3); border-right:1px solid var(--line)}
 
-/* TOTALS (visible only) */
+/* Soft shadow seam after sticky set */
+thead .sticky-col-3::after, tbody td.sticky-col-3::after{
+  content:""; position:absolute; top:0; right:-6px; width:6px; height:100%; pointer-events:none;
+  background:linear-gradient(to right,rgba(0,0,0,.06),transparent);
+}
+
+/* Cells */
+tbody td{padding:7px 8px; border-bottom:1px solid #ECEFF3; text-align:left; white-space:nowrap; border-right:1px solid #F2F4F7}
+tbody td:last-child, thead th:last-child{border-right:none}
+
+/* Stripe + hover */
+tbody tr:not(.child-row):nth-child(odd){ background:#FCFCFD }
+tbody tr:hover:not(.child-row){ background:#F6F8FA }
+
+/* Parent/child rows */
+.parent-row{background:#FAFAFC; cursor:pointer; border-top:1px solid var(--line-strong); font-weight:600}
+.parent-row.expanded{background:#F7FBF8}
+.parent-toggle .chev{display:inline-block; width:14px}
+.child-row{display:none; opacity:0; transform:translateY(-6px); transition:opacity var(--anim) ease, transform var(--anim) ease}
+.child-row.show{display:table-row}
+.child-row .first{color:#963131; font-weight:800}
+.child-row td{background:var(--sell-bg)}
+.child-row td.sticky-col-1,.child-row td.sticky-col-2,.child-row td.sticky-col-3{background:var(--sell-bg)}
+.child-row td:first-child{padding-left:6px}
+
+/* Stone badge */
+.badge{display:inline-block; font-size:10px; padding:2px 6px; border-radius:999px; border:1px solid var(--line-strong); background:#F7F9F8; margin-left:6px}
+.badge.aj{background:#F0FAF5; border-color:#CBE9D7; color:#16583B}
+.badge.cal{background:#F5F0FF; border-color:#E1DAFF; color:#4C2FB8}
+
+/* Value coloring */
+.val-pos{color:var(--success); font-weight:700}
+.val-neg{color:var(--danger); font-weight:700}
+
+/* Totals footer */
 .totals-bar{
-  display:flex;gap:12px;justify-content:flex-end;align-items:center;
-  padding:8px 10px;border-top:1px solid var(--line);background:#fff;border-radius:0 0 12px 12px
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center;
+  padding:10px 12px; border:1px solid var(--line); background:#fff; border-radius:10px; margin-top:10px
 }
-.pill-sum{background:#f3efe6;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:700}
+.pill-strong{background:#FBFBFD; border:1px solid var(--line); border-radius:999px; padding:6px 10px; font-weight:700}
+.pill-sold{background:#FFF7EA; border-color:#F1D6A8; color:#8C6400}
 
-/* PRINT */
-@media print{
-  .nav-vertical,.header,.panel.filters,.pills,.slicer-menu{display:none!important}
-  .panel{box-shadow:none;border-color:#bbb}
+/* Mini totals (floating when scrolled) */
+.mini-totals{
+  position:sticky; top:0; z-index:5; display:none; background:#FFFFFFCC; backdrop-filter:saturate(180%) blur(8px);
+  border:1px solid var(--line); border-radius:10px; padding:6px 8px; box-shadow:var(--shadow-sm); margin:4px 0;
 }
+.mini-totals.show{display:flex; gap:10px; justify-content:flex-end; align-items:center}
+
+/* Column focus */
+.col-focus th[data-col].focused,
+.col-focus td[data-col].focused{ background:#FAFAFF }
+
+/* Density toggle */
+.compact tbody td{padding:4px 6px}
+.compact thead th{padding:5px 6px}
+
+/* Print */
+@media print{
+  body{overflow:visible; height:auto}
+  .nav-vertical, .header, .kpi-bar, .summary-controls, .stone-row, .pills, .mini-totals, .totals-bar{display:none!important}
+  .table-wrap{max-height:unset!important; overflow:visible; border:0; box-shadow:none}
+}
+
+/* Responsive */
+@media (max-width: 1200px){ .kpi-bar{grid-template-columns:repeat(3,minmax(140px,1fr))} }
+@media (max-width: 720px){ .kpi-bar{grid-template-columns:repeat(2,minmax(140px,1fr))} }
 </style>
 </head>
 <body>
 
 <!-- NAV -->
-<div class="nav-vertical">
-  <a href="index.html" class="nav-item">👤</a>
-  <a href="add.html" class="nav-item">➕</a>
-  <a href="sell.html" class="nav-item">💎</a>
-  <a href="reports.html" class="nav-item active">📊</a>
-</div>
+<nav class="nav-vertical" aria-label="Primary">
+  <a href="index.html" class="nav-item" title="Dashboard">👤</a>
+  <a href="add.html" class="nav-item" title="Add">➕</a>
+  <a href="sell.html" class="nav-item" title="Sell">💎</a>
+  <a class="nav-item active" title="Reports">📊</a>
+</nav>
 
-<div class="right">
-
-  <div class="header">
-    <div class="title">Inventory Report — ADD & SELL</div>
+<main class="right">
+  <header class="header">
+    <h1 class="title">Inventory Ledger</h1>
     <div class="spacer"></div>
-    <button class="btn" id="btnExport">Export CSV</button>
-    <button class="btn" id="btnPrint">Print</button>
-    <button class="btn primary" id="btnClear">Clear Filters</button>
-  </div>
-
-  <!-- Filters: Slicer bar -->
-  <div class="panel filters">
-    <div class="head">Filters</div>
-    <div class="slicer-bar" id="slicerBar">
-      <!-- slicers are injected -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn small" id="btnExpandAll">Expand All</button>
+      <button class="btn small" id="btnCollapseAll">Collapse All</button>
+      <button class="btn small" id="btnOpenOnly">Show Open Balances</button>
+      <button class="btn small" id="btnDensity">Density: Relaxed</button>
+      <button class="btn small" id="btnClear">Clear</button>
+      <button class="btn small" id="btnExport">Export CSV</button>
+      <button class="btn primary small" id="btnPrint">Print</button>
     </div>
-    <div class="date-box">
-      <b>Date:</b>
-      <input type="date" id="f_date_from">
-      <span>to</span>
-      <input type="date" id="f_date_to">
-    </div>
-    <div class="pills" id="pills"></div>
-  </div>
+  </header>
 
-  <!-- Ledger -->
-  <div class="panel">
-    <div class="head">Movement Ledger (visible rows only)</div>
-    <div class="table-wrap">
-      <table id="tblMov">
+  <!-- KPI BAR -->
+  <section class="kpi-bar" id="kpiBar">
+    <div class="kpi"><div class="label">Total PCS</div><div class="value" id="kpiTotalPCS">0</div></div>
+    <div class="kpi"><div class="label">Total CTS</div><div class="value" id="kpiTotalCTS">0.00</div></div>
+    <div class="kpi"><div class="label">Total Amount</div><div class="value" id="kpiTotalAmt">0.00</div></div>
+    <div class="kpi"><div class="label">Sold Amount</div><div class="value" id="kpiSoldAmt">0.00</div></div>
+    <div class="kpi"><div class="label">Balance PCS</div><div class="value" id="kpiBalPCS">0</div></div>
+    <div class="kpi"><div class="label">Balance CTS</div><div class="value" id="kpiBalCTS">0.00</div></div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="panel" id="summaryPanel">
+    <div class="summary-controls">
+      <div class="segmented" role="tablist" aria-label="Summary tabs">
+        <button class="btn segment summaryBtn active" data-summary="overall">Overall Totals</button>
+        <button class="btn segment summaryBtn" data-summary="shape_size">Shape × Size</button>
+        <button class="btn segment summaryBtn" data-summary="stone_grade">Stone × Grade/LotNo</button>
+        <button class="btn segment summaryBtn" data-summary="lot">Lot Summary</button>
+        <button class="btn segment summaryBtn" data-summary="party">Party Summary (SELL)</button>
+      </div>
+
+      <input id="quickSearch" class="searchbox" placeholder="Quick search: TX / Party / Lot / Grade / Shape / Size — Enter to apply"/>
+
+      <div class="datebox" role="group" aria-label="Date range">
+        <span>Date:</span>
+        <input type="date" id="f_date_from" aria-label="From date">
+        <span>to</span>
+        <input type="date" id="f_date_to" aria-label="To date">
+      </div>
+
+      <button class="btn" id="btnToggleSummary">Show Summary ▾</button>
+    </div>
+
+    <!-- Stone filter row -->
+    <div class="stone-row">
+      <span class="label">Stone:</span>
+      <button class="btn pill stoneBtn active" data-stone="ALL">ALL</button>
+      <button class="btn pill stoneBtn" data-stone="AJMZ">AJMZ</button>
+      <button class="btn pill stoneBtn" data-stone="CALIBRATE">CALIBRATE</button>
+    </div>
+
+    <div class="collapse" id="summaryCollapse">
+      <div class="summary-title" id="summaryTitle">Showing: Overall Totals</div>
+      <div id="summaryOutput"><em>Loading…</em></div>
+      <div class="pills" id="pills" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- LEDGER -->
+  <section>
+    <!-- mini floating totals when scrolled -->
+    <div class="mini-totals" id="miniTotals">
+      <span class="pill-strong">PCS: <span id="miniPCS">0</span></span>
+      <span class="pill-strong">CTS: <span id="miniCTS">0.00</span></span>
+      <span class="pill-strong">AMT: <span id="miniAMT">0.00</span></span>
+      <span class="pill-strong pill-sold">SOLD: <span id="miniSOLD">0.00</span></span>
+    </div>
+
+    <!-- sentinel for intersection observer -->
+    <div id="sentinel" style="height:1px"></div>
+
+    <div class="table-wrap" id="tableWrap">
+      <table id="ledgerTable">
         <thead>
           <tr>
-            <th>Movement</th>
-            <th>Stone</th>
-            <th>Transaction No</th>
-            <th>Date</th>
-            <th>Party</th>
-            <th>Lot</th>
-            <th>Lot No / Grade</th>
-            <th>Shape</th>
-            <th>Size</th>
-            <th class="mono">PCS</th>
-            <th class="mono">CTS</th>
-            <th class="mono">Rate</th>
-            <th class="mono">Amount</th>
+            <th class="sticky-col-1" style="width:var(--col1)" data-col="0">#</th>
+            <th class="sticky-col-2" style="width:var(--col2)" data-col="1">TX</th>
+            <th class="sticky-col-3" style="width:var(--col3)" data-col="2">Date</th>
+            <th data-col="3">Party</th>
+            <th data-col="4">Stone</th>
+            <th data-col="5">Lot</th>
+            <th data-col="6">Grade/LotNo</th>
+            <th data-col="7">PCS</th>
+            <th data-col="8">CTS</th>
+            <th data-col="9">Total Amount</th>
+            <th data-col="10">Total Sold</th>
+            <th data-col="11">BAL PCS</th>
+            <th data-col="12">BAL CTS</th>
+            <th data-col="13"># OF SELLS</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="ledgerBody"></tbody>
       </table>
     </div>
-    <div class="totals-bar" id="movTotals">
-      <span class="pill-sum">PCS: <span id="sumPCS">0</span></span>
-      <span class="pill-sum">CTS: <span id="sumCTS">0.00</span></span>
-      <span class="pill-sum">Amount: <span id="sumAMT">0.00</span></span>
-    </div>
-  </div>
 
-  <!-- Balance -->
-  <div class="panel">
-    <div class="head">Remaining Balances (ADD − SELL) — Grouped by Stone + Lot + LotNo/Grade</div>
-    <div class="table-wrap">
-      <table id="tblBal">
-        <thead>
-          <tr>
-            <th>Stone</th>
-            <th>Lot</th>
-            <th>Lot No / Grade</th>
-            <th class="mono">Balance PCS</th>
-            <th class="mono">Balance CTS</th>
-            <th class="mono">Balance Amount</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="totals-bar">
+      <span class="pill-strong">Total PCS: <span id="sumPCS">0</span></span>
+      <span class="pill-strong">Total CTS: <span id="sumCTS">0.00</span></span>
+      <span class="pill-strong">Total Amount: <span id="sumAMT">0.00</span></span>
+      <span class="pill-strong pill-sold">Total SOLD: <span id="sumSOLD">0.00</span></span>
     </div>
-    <div class="totals-bar" id="balTotals">
-      <span class="pill-sum">PCS Balance: <span id="bPCS">0</span></span>
-      <span class="pill-sum">CTS Balance: <span id="bCTS">0.00</span></span>
-      <span class="pill-sum">Amount Balance: <span id="bAMT">0.00</span></span>
-    </div>
-  </div>
 
-</div><!-- /.right -->
+    <div class="footer-actions" style="display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:6px 2px;color:var(--muted);font-size:12px">
+      Tip: Click an ADD row (▼/▶) to expand/collapse. Shortcuts: Shift+E / Shift+C.
+    </div>
+  </section>
+</main>
 
 <script type="module">
-/* ===== Firebase ===== */
+/* Firebase */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-const firebaseConfig={
-  apiKey:"AIzaSyDkgQ5BCl8LySoiq5CC-HOWJddnJQQa3jQ",
-  authDomain:"poojainventory-ab7fa.firebaseapp.com",
-  databaseURL:"https://poojainventory-ab7fa-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"poojainventory-ab7fa",
-  storageBucket:"poojainventory-ab7fa.firebasestorage.app",
-  messagingSenderId:"804100194953",
-  appId:"1:804100194953:web:0af84ea1d53c3dde26bc58"
+const firebaseConfig = {
+  apiKey: "AIzaSyDkgQ5BCl8LySoiq5CC-HOWJddnJQQa3jQ",
+  authDomain: "poojainventory-ab7fa.firebaseapp.com",
+  databaseURL: "https://poojainventory-ab7fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "poojainventory-ab7fa",
+  storageBucket: "poojainventory-ab7fa.firebasestorage.app",
+  messagingSenderId: "804100194953",
+  appId: "1:804100194953:web:0af84ea1d53c3dde26bc58"
 };
-const app=initializeApp(firebaseConfig);
-const db=getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
 
-/* ===== Helpers ===== */
-const $=sel=>document.querySelector(sel);
-const $$=sel=>[...document.querySelectorAll(sel)];
-const byId=id=>document.getElementById(id);
-const fmt0=n=>(+(n||0)).toLocaleString(undefined,{maximumFractionDigits:0});
-const fmt2=n=>(+(n||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-const toNum=s=>+String(s||0).toString().replace(/[,()]/g,'')||0;
+/* Helpers & state */
+const $  = s=>document.querySelector(s);
+const $$ = s=>[...document.querySelectorAll(s)];
+const byId = id=>document.getElementById(id);
 
-/* ===== Data ===== */
-let movements=[]; // unified rows (ADD positive, SELL negative as requested)
-let filtered=[];  // visible after slicers/date
-let slicerDefs=[
-  {key:'tx', label:'Transaction No'},
-  {key:'stone', label:'Stone'},
-  {key:'movement', label:'Status'}, // ADD / SELL
-  {key:'party', label:'Party'},
-  {key:'lot', label:'Lot'},
-  {key:'leg', label:'Lot No / Grade'},
-  {key:'shape', label:'Shape'},
-  {key:'size', label:'Size'}
-];
-let slicerState={}; // key -> Set(values)
+const fmt0 = n=>(+(n||0)).toLocaleString(undefined,{maximumFractionDigits:0});
+const fmt2 = n=>(+(n||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const abs  = n=>Math.abs(+n||0);
+const valClass = n=>{ const v=+n||0; return v>0?'val-pos':v<0?'val-neg':'val-zero'; };
 
-/* ===== Build Slicer UI (Sheets-like) ===== */
-function buildSlicers(){
-  const bar=byId('slicerBar'); bar.innerHTML='';
-  slicerDefs.forEach(def=>{
-    const wrap=document.createElement('div'); wrap.className='slicer'; wrap.dataset.key=def.key;
-    wrap.innerHTML=`
-      <button class="slicer-btn" type="button">${def.label}</button>
-      <div class="slicer-menu">
-        <div class="slicer-head">
-          <input placeholder="Search ${def.label}…">
-        </div>
-        <div class="slicer-actions">
-          <span class="a selall">Select all</span>
-          <span class="a clear">Clear</span>
-        </div>
-        <div class="slicer-list"></div>
-        <div class="slicer-foot">
-          <button class="btn">Cancel</button>
-          <button class="btn primary">Apply</button>
-        </div>
-      </div>`;
-    bar.appendChild(wrap);
+const SAVE_KEY = 'reports_clean_v2';
 
-    const btn=wrap.querySelector('.slicer-btn');
-    const menu=wrap.querySelector('.slicer-menu');
-    const list=wrap.querySelector('.slicer-list');
-    const inp=wrap.querySelector('input');
-    const selAll=wrap.querySelector('.selall');
-    const clr=wrap.querySelector('.clear');
-    const [btnCancel, btnApply]=wrap.querySelectorAll('.slicer-foot .btn');
+let movements = [];   // normalized
+let groups    = [];   // [{ add, sells:[] }]
+let openOnly  = false;
+let expanded  = new Set();
+let quickSearch = '';
+let activeSummary = 'overall';
+let summaryOpen  = false;
+let stoneFilter  = 'ALL';
+let compactMode  = false;
 
-    function open(){ closeAll(); wrap.classList.add('open'); renderList(); }
-    function close(){ wrap.classList.remove('open'); }
-    function renderList(){
-      const values=[...new Set(movements.map(m=>m[def.key]).filter(v=>v!=='' && v!==undefined))].sort((a,b)=>String(a).localeCompare(String(b)));
-      const q=(inp.value||'').toLowerCase();
-      list.innerHTML='';
-      const cur=new Set(slicerState[def.key]||[]);
-      values
-        .filter(v=> String(v).toLowerCase().includes(q))
-        .forEach(v=>{
-          const row=document.createElement('label'); row.className='slicer-item';
-          row.innerHTML=`<input type="checkbox" ${cur.size? (cur.has(String(v))?'checked':'') : 'checked'}> <span>${v}</span>`;
-          list.appendChild(row);
-        });
-    }
-    btn.addEventListener('click',open);
-    inp.addEventListener('input',renderList);
-    selAll.onclick=()=>{ slicerState[def.key]=new Set([...new Set(movements.map(m=>m[def.key]).filter(Boolean))].map(String)); renderList(); };
-    clr.onclick=()=>{ slicerState[def.key]=new Set(); renderList(); };
-    btnCancel.onclick=close;
-    btnApply.onclick=()=>{
-      const chosen=[...list.querySelectorAll('input[type=checkbox]')]
-        .filter(x=>x.checked).map(x=>x.nextElementSibling.textContent);
-      // if user selects nothing => means no filter (show all)
-      slicerState[def.key]= new Set(chosen);
-      close(); applyFilters();
-    };
-
-    // close on outside click
-    document.addEventListener('click',e=>{
-      if(!wrap.contains(e.target) && !btn.contains(e.target)) close();
-    });
-  });
-}
-function closeAll(){ $$('.slicer').forEach(s=>s.classList.remove('open')); }
-
-/* Pills for quick overview / clear per slicer */
+/* Pills */
 function renderPills(){
-  const box=byId('pills'); box.innerHTML='';
-  slicerDefs.forEach(def=>{
-    const cur=[...(slicerState[def.key]||[])];
-    if(cur.length && cur.length < new Set(movements.map(m=>m[def.key]).filter(Boolean)).size){
-      const pill=document.createElement('span'); pill.className='pill';
-      pill.innerHTML = `<b>${def.label}:</b> ${cur.slice(0,3).join(', ')}${cur.length>3?' …':''}<span class="x">×</span>`;
-      pill.querySelector('.x').onclick=()=>{ slicerState[def.key]=new Set(); applyFilters(); };
-      box.appendChild(pill);
-    }
-  });
+  const box = byId('pills'); box.innerHTML='';
   const d1=byId('f_date_from').value, d2=byId('f_date_to').value;
-  if(d1||d2){
+
+  if(d1 || d2){
     const pill=document.createElement('span'); pill.className='pill';
-    pill.innerHTML=`<b>Date:</b> ${d1||'…'} → ${d2||'…'}<span class="x">×</span>`;
+    const label = d1 && d2 ? `${d1} → ${d2}` : d1 ? `From: ${d1}` : `To: ${d2}`;
+    pill.innerHTML = `<b>Date:</b> ${label}<span class="x">×</span>`;
     pill.querySelector('.x').onclick=()=>{ byId('f_date_from').value=''; byId('f_date_to').value=''; applyFilters(); };
+    box.appendChild(pill);
+  }
+  if(quickSearch){
+    const pill=document.createElement('span'); pill.className='pill';
+    pill.innerHTML = `<b>Search:</b> ${quickSearch}<span class="x">×</span>`;
+    pill.querySelector('.x').onclick=()=>{ byId('quickSearch').value=''; quickSearch=''; applyFilters(); };
+    box.appendChild(pill);
+  }
+  if(openOnly){
+    const pill=document.createElement('span'); pill.className='pill';
+    pill.innerHTML = `<b>View:</b> Open balances only<span class="x">×</span>`;
+    pill.querySelector('.x').onclick=()=>{ openOnly=false; byId('btnOpenOnly').textContent='Show Open Balances'; applyFilters(); };
     box.appendChild(pill);
   }
 }
 
-/* ===== Load data (ADD & SELL only) ===== */
-async function loadAll(){
-  movements=[];
+/* Save/Load */
+function saveState(){
+  const s = {
+    d1: byId('f_date_from').value || '',
+    d2: byId('f_date_to').value   || '',
+    openOnly, quickSearch, expanded:[...expanded], activeSummary, summaryOpen, stoneFilter, compactMode
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY); if(!raw) return;
+    const s = JSON.parse(raw);
+    byId('f_date_from').value = s.d1 || '';
+    byId('f_date_to').value   = s.d2 || '';
+    openOnly    = !!s.openOnly;
+    quickSearch = s.quickSearch || '';
+    byId('quickSearch').value = quickSearch;
+    expanded     = new Set(s.expanded||[]);
+    activeSummary= s.activeSummary || 'overall';
+    summaryOpen  = !!s.summaryOpen;
+    stoneFilter  = s.stoneFilter || 'ALL';
+    compactMode  = !!s.compactMode;
 
+    byId('btnOpenOnly').textContent = openOnly ? 'Show All' : 'Show Open Balances';
+    highlightSummaryButton(activeSummary);
+    setSummaryOpen(summaryOpen,true);
+
+    $$('.stoneBtn').forEach(b=>b.classList.remove('active'));
+    const sb = document.querySelector(`.stoneBtn[data-stone="${stoneFilter}"]`);
+    if(sb) sb.classList.add('active');
+
+    setDensity(compactMode,true);
+  }catch(e){}
+}
+
+/* Filters */
+function passDate(r){
+  const d1 = byId('f_date_from').value;
+  const d2 = byId('f_date_to').value;
+  if(d1 && (r.date||'') < d1) return false;
+  if(d2 && (r.date||'') > d2) return false;
+  return true;
+}
+function passQuick(r){
+  if(!quickSearch) return true;
+  const q=quickSearch.toLowerCase();
+  return [r.tx,r.party,r.lot,r.leg,r.shape,r.size,r.stone].some(v=>String(v||'').toLowerCase().includes(q));
+}
+function passStoneRow(r){
+  if(stoneFilter==='ALL') return true;
+  return r.stone===stoneFilter;
+}
+
+/* Grouping for ledger */
+function groupRows(rows){
+  const map=new Map();
+  rows.forEach(r=>{ if(r.movement==='ADD') map.set(r.composite,{add:r,sells:[]}); });
+  rows.forEach(r=>{
+    if(r.movement==='SELL'){
+      const g=map.get(r.composite);
+      if(g) g.sells.push(r);
+    }
+  });
+
+  let arr=[...map.values()];
+  if(openOnly){
+    arr = arr.filter(g=>{
+      const a=g.add;
+      const p = a.pcs + g.sells.reduce((s,x)=>s+(+x.pcs||0),0);
+      const c = a.cts + g.sells.reduce((s,x)=>s+(+x.cts||0),0);
+      return Math.round(p)!==0 || Math.round(c*100)!==0;
+    });
+  }
+  // newest first
+  arr.sort((A,B)=> (String(B.add.date).localeCompare(String(A.add.date)) || String(B.add.tx).localeCompare(String(A.add.tx))));
+  return arr;
+}
+
+/* Ledger render */
+function renderLedger(){
+  const body = byId('ledgerBody'); body.innerHTML='';
+  let tPCS=0, tCTS=0, tAMT=0, tSOLD=0;
+
+  const frag = document.createDocumentFragment();
+
+  groups.forEach((g)=>{
+    const a = g.add;
+    const sells = g.sells.sort((x,y)=> (String(x.date).localeCompare(String(y.date)) || String(x.tx).localeCompare(String(y.tx))));
+    const key = a.composite;
+    const isOpen = expanded.has(key);
+
+    const origPCS = +a.pcs || 0;
+    const origCTS = +a.cts || 0;
+    const origAMT = +a.amount || 0;
+
+    const totalSold_parent = sells.reduce((sum, s)=> sum + abs(+s.amount||0), 0);
+    const balP_parent = origPCS + sells.reduce((s,x)=>s+(+x.pcs||0), 0);
+    const balC_parent = origCTS + sells.reduce((s,x)=>s+(+x.cts||0), 0);
+    const sellsCount = sells.length;
+
+    const tr = document.createElement('tr');
+    tr.className='parent-row' + (isOpen ? ' expanded' : '');
+    tr.dataset.key=key;
+    tr.innerHTML = `
+      <td class="sticky-col-1 parent-toggle"><span class="chev">${isOpen?'▼':'▶'}</span></td>
+      <td class="sticky-col-2" data-col="1">${a.tx}</td>
+      <td class="sticky-col-3" data-col="2">${a.date}</td>
+      <td data-col="3">${a.party||''}</td>
+      <td data-col="4">${a.stone||''}${stoneBadge(a.stone)}</td>
+      <td data-col="5">${a.lot||''}</td>
+      <td data-col="6">${a.leg||''}</td>
+      <td data-col="7">${fmt0(origPCS)}</td>
+      <td data-col="8">${fmt2(origCTS)}</td>
+      <td data-col="9">${fmt2(origAMT)}</td>
+      <td data-col="10" style="color:#8C6400;font-weight:700">${fmt2(totalSold_parent)}</td>
+      <td data-col="11" class="${valClass(balP_parent)}">${fmt0(balP_parent)}</td>
+      <td data-col="12" class="${valClass(balC_parent)}">${fmt2(balC_parent)}</td>
+      <td data-col="13">${fmt0(sellsCount)}</td>
+    `;
+    frag.appendChild(tr);
+
+    let balP = origPCS;
+    let balC = origCTS;
+
+    sells.forEach(s=>{
+      balP += (+s.pcs||0);
+      balC += (+s.cts||0);
+
+      const cr = document.createElement('tr');
+      cr.className='child-row';
+      cr.dataset.parent=key;
+      if(isOpen){ cr.classList.add('show'); requestAnimationFrame(()=>{ cr.style.opacity='1'; cr.style.transform='translateY(0)'; }); }
+      cr.innerHTML = `
+        <td class="sticky-col-1 first">→</td>
+        <td class="sticky-col-2" data-col="1">${s.tx||''}</td>
+        <td class="sticky-col-3" data-col="2">${s.date||''}</td>
+        <td data-col="3">${s.party||''}</td>
+        <td data-col="4">${s.stone||''}${stoneBadge(s.stone)}</td>
+        <td data-col="5">${s.lot||''}</td>
+        <td data-col="6">${s.leg||''}</td>
+        <td data-col="7">${fmt0(s.pcs)}</td>
+        <td data-col="8">${fmt2(s.cts)}</td>
+        <td data-col="9" style="color:#bbb">—</td>
+        <td data-col="10" style="color:#8C6400;font-weight:700">${fmt2(abs(+s.amount||0))}</td>
+        <td data-col="11" class="${valClass(balP)}">${fmt0(balP)}</td>
+        <td data-col="12" class="${valClass(balC)}">${fmt2(balC)}</td>
+        <td data-col="13" style="color:#bbb">—</td>
+      `;
+      frag.appendChild(cr);
+    });
+
+    tPCS  += origPCS + sells.reduce((s,x)=>s+(+x.pcs||0),0);
+    tCTS  += origCTS + sells.reduce((s,x)=>s+(+x.cts||0),0);
+    tAMT  += origAMT;
+    tSOLD += sells.reduce((s,x)=>s+abs(+x.amount||0),0);
+  });
+
+  body.appendChild(frag);
+
+  // Footer totals
+  byId('sumPCS').textContent = fmt0(tPCS);
+  byId('sumCTS').textContent = fmt2(tCTS);
+  byId('sumAMT').textContent = fmt2(tAMT);
+  byId('sumSOLD').textContent= fmt2(tSOLD);
+
+  // KPI bar mirrors
+  updateKPIBar(tPCS,tCTS,tAMT,tSOLD);
+  updateMiniTotals(tPCS,tCTS,tAMT,tSOLD);
+
+  // Toggle expand/collapse on parent
+  $$('.parent-row').forEach(r=>{
+    r.addEventListener('click', ()=>{
+      const key = r.dataset.key;
+      const chev = r.querySelector('.chev');
+      const children = $$(`tr.child-row[data-parent="${cssEsc(key)}"]`);
+      const isOpen = expanded.has(key);
+
+      if(isOpen){
+        children.forEach(row=>{
+          row.style.opacity='0'; row.style.transform='translateY(-6px)';
+          row.addEventListener('transitionend', function te(){
+            row.classList.remove('show');
+            row.removeEventListener('transitionend', te);
+          }, {once:true});
+        });
+        expanded.delete(key);
+        chev.textContent='▶';
+        r.classList.remove('expanded');
+      }else{
+        children.forEach(row=>{
+          row.classList.add('show');
+          requestAnimationFrame(()=>{ row.style.opacity='1'; row.style.transform='translateY(0)'; });
+        });
+        expanded.add(key);
+        chev.textContent='▼';
+        r.classList.add('expanded');
+      }
+      saveState();
+    }, {passive:true});
+  });
+}
+
+/* Stone badge */
+function stoneBadge(stone){
+  if(stone==='AJMZ') return ' <span class="badge aj">AJMZ</span>';
+  if(stone==='CALIBRATE') return ' <span class="badge cal">CAL</span>';
+  return '';
+}
+
+/* KPI mirrors */
+function updateKPIBar(tPCS,tCTS,tAMT,tSOLD){
+  byId('kpiTotalPCS').textContent = fmt0(tPCS);
+  byId('kpiTotalCTS').textContent = fmt2(tCTS);
+  byId('kpiTotalAmt').textContent = fmt2(tAMT);
+  byId('kpiSoldAmt').textContent  = fmt2(tSOLD);
+
+  // balances (global)
+  // to compute balances properly use groups:
+  let sPCS=0, sCTS=0;
+  groups.forEach(g=>{
+    sPCS += g.sells.reduce((x,v)=>x+Math.abs(+v.pcs||0),0);
+    sCTS += g.sells.reduce((x,v)=>x+Math.abs(+v.cts||0),0);
+  });
+  byId('kpiBalPCS').textContent   = fmt0(tPCS - sPCS);
+  byId('kpiBalCTS').textContent   = fmt2(tCTS - sCTS);
+}
+function updateMiniTotals(p,c,a,s){
+  byId('miniPCS').textContent  = fmt0(p);
+  byId('miniCTS').textContent  = fmt2(c);
+  byId('miniAMT').textContent  = fmt2(a);
+  byId('miniSOLD').textContent = fmt2(s);
+}
+
+/* Column focus */
+(function setupColumnFocus(){
+  const table = byId('ledgerTable');
+  const wrap  = byId('tableWrap');
+  let focused = -1;
+
+  function setFocus(idx){
+    if(idx===focused) return;
+    focused = idx;
+    table.classList.add('col-focus');
+    $$('th[data-col], td[data-col]').forEach(el=>el.classList.remove('focused'));
+    $$(`th[data-col="${idx}"], td[data-col="${idx}"]`).forEach(el=>el.classList.add('focused'));
+  }
+  function clearFocus(){
+    focused=-1; table.classList.remove('col-focus');
+    $$('th[data-col], td[data-col]').forEach(el=>el.classList.remove('focused'));
+  }
+  $$('thead th[data-col]').forEach(th=>{
+    th.addEventListener('mouseenter', ()=> setFocus(th.dataset.col));
+  });
+  wrap.addEventListener('mouseleave', clearFocus);
+})();
+
+/* Intersection observer to show mini totals */
+(function setupMiniTotalsIO(){
+  const sentinel = byId('sentinel');
+  const mini = byId('miniTotals');
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        mini.classList.remove('show');
+      }else{
+        mini.classList.add('show');
+      }
+    });
+  }, {root: null, threshold: 0});
+  io.observe(sentinel);
+})();
+
+/* Utils */
+function cssEsc(s){ return CSS.escape ? CSS.escape(s) : String(s).replace(/"/g,'\\"'); }
+
+/* Apply filters & render */
+function applyFilters(restoring=false){
+  quickSearch = byId('quickSearch').value.trim();
+
+  const filtered = movements.filter(r=> passDate(r) && passQuick(r) );
+  groups = groupRows(filtered);
+
+  renderPills();
+  renderLedger();
+  renderActiveSummary();
+  if(!restoring) saveState();
+}
+
+/* ===== Summary Engine (tabs + stone filter) ===== */
+const summaryOutput = byId("summaryOutput");
+const summaryTitle  = byId("summaryTitle");
+
+function renderSummaryTable(headers, rows, totalsRow=null) {
+  const thead = `
+    <thead>
+      <tr>${headers.map(h=>`<th style="background:#FBFBFD;border-bottom:1px solid var(--line-strong);padding:6px;text-align:left;position:sticky;top:0">${h}</th>`).join('')}</tr>
+    </thead>`;
+  const tbody = `
+    <tbody>
+      ${rows.map((r,i)=>`<tr style="background:${i%2? '#FCFCFD':'#FFFFFF'}">${r.map(c=>`<td style="padding:6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap">${c}</td>`).join('')}</tr>`).join('')}
+    </tbody>`;
+  const tfoot = totalsRow ? `
+    <tfoot>
+      <tr>${totalsRow.map((c,i)=>`<td style="padding:6px;border-top:1px solid var(--line-strong); font-weight:${i===0?'700':'600'}; text-align:left">${c}</td>`).join('')}</tr>
+    </tfoot>` : '';
+
+  summaryOutput.innerHTML = `
+    <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:920px">
+      ${thead}${tbody}${tfoot}
+    </table>
+  `;
+}
+
+function passStone(a){ return (stoneFilter==='ALL' || a.stone===stoneFilter); }
+
+/* Overall */
+function computeOverall() {
+  let tPCS=0, tCTS=0, tAMT=0, sPCS=0, sCTS=0, sAMT=0;
+  groups.forEach(g=>{
+    const a = g.add; if(!passStone(a)) return;
+    const sells = g.sells.filter(s=>passStone(s));
+    tPCS += +a.pcs||0;
+    tCTS += +a.cts||0;
+    tAMT += +a.amount||0;
+    sPCS += sells.reduce((x,v)=>x+Math.abs(+v.pcs||0),0);
+    sCTS += sells.reduce((x,v)=>x+Math.abs(+v.cts||0),0);
+    sAMT += sells.reduce((x,v)=>x+Math.abs(+v.amount||0),0);
+  });
+  const rows = [
+    ["Total PCS",fmt0(tPCS)],
+    ["Total CTS",fmt2(tCTS)],
+    ["Total Amount",fmt2(tAMT)],
+    ["Sold PCS",fmt0(sPCS)],
+    ["Sold CTS",fmt2(sCTS)],
+    ["Sold Amount",fmt2(sAMT)],
+    ["Balance PCS",fmt0(tPCS - sPCS)],
+    ["Balance CTS",fmt2(tCTS - sCTS)]
+  ];
+  renderSummaryTable(["Metric","Value"], rows);
+}
+
+/* Shape × Size (simple) */
+function computeShapeSize() {
+  const map = {}; // shape -> size -> metrics
+  groups.forEach(g=>{
+    const a = g.add; if(!passStone(a)) return;
+    const sells = g.sells.filter(s=>passStone(s));
+    const shape = a.shape || "N/A";
+    const size  = a.size  || "N/A";
+    if(!map[shape]) map[shape]={};
+    if(!map[shape][size]) map[shape][size]={tPCS:0,tCTS:0,tAMT:0,sPCS:0,sCTS:0,sAMT:0};
+    map[shape][size].tPCS += +a.pcs||0;
+    map[shape][size].tCTS += +a.cts||0;
+    map[shape][size].tAMT += +a.amount||0;
+    sells.forEach(s=>{
+      map[shape][size].sPCS += Math.abs(+s.pcs||0);
+      map[shape][size].sCTS += Math.abs(+s.cts||0);
+      map[shape][size].sAMT += Math.abs(+s.amount||0);
+    });
+  });
+  const rows = [];
+  let totTP=0, totTC=0, totTA=0, totSP=0, totSC=0, totSA=0;
+  Object.keys(map).sort().forEach(shape=>{
+    Object.keys(map[shape]).sort().forEach(size=>{
+      const m = map[shape][size];
+      rows.push([shape, size, fmt0(m.tPCS), fmt2(m.tCTS), fmt2(m.tAMT), fmt0(m.sPCS), fmt2(m.sCTS), fmt2(m.sAMT), fmt0(m.tPCS-m.sPCS), fmt2(m.tCTS-m.sCTS)]);
+      totTP+=m.tPCS; totTC+=m.tCTS; totTA+=m.tAMT; totSP+=m.sPCS; totSC+=m.sCTS; totSA+=m.sAMT;
+    });
+  });
+  renderSummaryTable(
+    ["Shape","Size","Total PCS","Total CTS","Total Amt","Sold PCS","Sold CTS","Sold Amt","Bal PCS","Bal CTS"],
+    rows,
+    ["TOTAL","", fmt0(totTP), fmt2(totTC), fmt2(totTA), fmt0(totSP), fmt2(totSC), fmt2(totSA), fmt0(totTP-totSP), fmt2(totTC-totSC)]
+  );
+}
+
+/* Stone × Grade/LotNo — sectioned; CALIBRATE includes Size level (Option B) */
+function computeStoneGrade() {
+  // map: stone -> (AJMZ: grade -> metrics) ; (CAL: grade -> size -> metrics)
+  const map = {};
+
+  groups.forEach(g=>{
+    const a = g.add; if(!passStone(a)) return;
+    const sells=g.sells.filter(s=>passStone(s));
+
+    const stone = a.stone || "N/A";
+    const grade = a.leg || "N/A"; // AJMZ uses lotno; CAL uses grade
+    const size  = a.size || "N/A";
+
+    if(!map[stone]) map[stone] = {__kind: stone}; // tag
+
+    if(stone==='CALIBRATE'){
+      if(!map[stone][grade]) map[stone][grade] = {};
+      if(!map[stone][grade][size]) map[stone][grade][size] = {tPCS:0,tCTS:0,tAMT:0,sPCS:0,sCTS:0,sAMT:0};
+      map[stone][grade][size].tPCS += +a.pcs||0;
+      map[stone][grade][size].tCTS += +a.cts||0;
+      map[stone][grade][size].tAMT += +a.amount||0;
+      sells.forEach(s=>{
+        map[stone][grade][size].sPCS += Math.abs(+s.pcs||0);
+        map[stone][grade][size].sCTS += Math.abs(+s.cts||0);
+        map[stone][grade][size].sAMT += Math.abs(+s.amount||0);
+      });
+    }else{ // AJMZ — grade only
+      if(!map[stone][grade]) map[stone][grade] = {tPCS:0,tCTS:0,tAMT:0,sPCS:0,sCTS:0,sAMT:0};
+      map[stone][grade].tPCS += +a.pcs||0;
+      map[stone][grade].tCTS += +a.cts||0;
+      map[stone][grade].tAMT += +a.amount||0;
+      sells.forEach(s=>{
+        map[stone][grade].sPCS += Math.abs(+s.pcs||0);
+        map[stone][grade].sCTS += Math.abs(+s.cts||0);
+        map[stone][grade].sAMT += Math.abs(+s.amount||0);
+      });
+    }
+  });
+
+  const rows = [];
+  let totTP=0, totTC=0, totTA=0, totSP=0, totSC=0, totSA=0;
+
+  Object.keys(map).sort().forEach(stone=>{
+    // Stone header
+    rows.push([`▼ ${stone}`, "", "", "", "", "", "", "", ""]);
+
+    if(stone==='CALIBRATE'){
+      Object.keys(map[stone]).filter(k=>k!=='__kind').sort().forEach(grade=>{
+        // Grade header (indented)
+        rows.push([`   ${grade}`, "", "", "", "", "", "", "", ""]);
+        Object.keys(map[stone][grade]).sort().forEach(size=>{
+          const m = map[stone][grade][size];
+          const bPCS = m.tPCS - m.sPCS;
+          const bCTS = m.tCTS - m.sCTS;
+          rows.push([
+            `      Size ${size}`,
+            fmt0(m.tPCS),
+            fmt2(m.tCTS),
+            fmt2(m.tAMT),
+            fmt0(m.sPCS),
+            fmt2(m.sCTS),
+            fmt2(m.sAMT),
+            fmt0(bPCS),
+            fmt2(bCTS)
+          ]);
+          totTP+=m.tPCS; totTC+=m.tCTS; totTA+=m.tAMT;
+          totSP+=m.sPCS; totSC+=m.sCTS; totSA+=m.sAMT;
+        });
+      });
+    }else{
+      Object.keys(map[stone]).filter(k=>k!=='__kind').sort().forEach(grade=>{
+        const m = map[stone][grade];
+        const bPCS = m.tPCS - m.sPCS;
+        const bCTS = m.tCTS - m.sCTS;
+        rows.push([
+          `   ${grade}`,
+          fmt0(m.tPCS),
+          fmt2(m.tCTS),
+          fmt2(m.tAMT),
+          fmt0(m.sPCS),
+          fmt2(m.sCTS),
+          fmt2(m.sAMT),
+          fmt0(bPCS),
+          fmt2(bCTS)
+        ]);
+        totTP+=m.tPCS; totTC+=m.tCTS; totTA+=m.tAMT;
+        totSP+=m.sPCS; totSC+=m.sCTS; totSA+=m.sAMT;
+      });
+    }
+  });
+
+  renderSummaryTable(
+    ["Stone / Grade / Size","Total PCS","Total CTS","Total Amt","Sold PCS","Sold CTS","Sold Amt","Bal PCS","Bal CTS"],
+    rows,
+    ["TOTAL", fmt0(totTP), fmt2(totTC), fmt2(totTA), fmt0(totSP), fmt2(totSC), fmt2(totSA), fmt0(totTP-totSP), fmt2(totTC-totSC)]
+  );
+}
+
+/* Lot Summary — sectioned, with per-stone subtotals */
+function computeLot() {
+  const map = {}; // stone -> lot -> metrics
+
+  groups.forEach(g=>{
+    const a = g.add; if(!passStone(a)) return;
+    const stone = a.stone || "N/A";
+    const lot = a.lot || "N/A";
+    const sells = g.sells.filter(s=>passStone(s));
+
+    if(!map[stone]) map[stone] = {};
+    if(!map[stone][lot]) map[stone][lot] = {tPCS:0, tCTS:0, tAMT:0, sPCS:0, sCTS:0, sAMT:0};
+
+    map[stone][lot].tPCS += +a.pcs||0;
+    map[stone][lot].tCTS += +a.cts||0;
+    map[stone][lot].tAMT += +a.amount||0;
+    sells.forEach(s=>{
+      map[stone][lot].sPCS += Math.abs(+s.pcs||0);
+      map[stone][lot].sCTS += Math.abs(+s.cts||0);
+      map[stone][lot].sAMT += Math.abs(+s.amount||0);
+    });
+  });
+
+  const rows = [];
+  let grandTP=0, grandTC=0, grandTA=0, grandSP=0, grandSC=0, grandSA=0;
+
+  Object.keys(map).sort().forEach(stone=>{
+    let stTP=0, stTC=0, stTA=0, stSP=0, stSC=0, stSA=0;
+
+    rows.push([`▼ ${stone} (Totals)`,"","","","","","","",""]);
+
+    Object.keys(map[stone]).sort().forEach(lot=>{
+      const m = map[stone][lot];
+      const bPCS = m.tPCS - m.sPCS;
+      const bCTS = m.tCTS - m.sCTS;
+
+      rows.push([
+        `   Lot ${lot}`,
+        fmt0(m.tPCS),
+        fmt2(m.tCTS),
+        fmt2(m.tAMT),
+        fmt0(m.sPCS),
+        fmt2(m.sCTS),
+        fmt2(m.sAMT),
+        fmt0(bPCS),
+        fmt2(bCTS)
+      ]);
+
+      stTP+=m.tPCS; stTC+=m.tCTS; stTA+=m.tAMT;
+      stSP+=m.sPCS; stSC+=m.sCTS; stSA+=m.sAMT;
+    });
+
+    rows.push([
+      `   ➜ ${stone} Subtotal`,
+      fmt0(stTP),
+      fmt2(stTC),
+      fmt2(stTA),
+      fmt0(stSP),
+      fmt2(stSC),
+      fmt2(stSA),
+      fmt0(stTP - stSP),
+      fmt2(stTC - stSC)
+    ]);
+
+    grandTP+=stTP; grandTC+=stTC; grandTA+=stTA;
+    grandSP+=stSP; grandSC+=stSC; grandSA+=stSA;
+  });
+
+  renderSummaryTable(
+    ["Stone / Lot","Total PCS","Total CTS","Total Amt","Sold PCS","Sold CTS","Sold Amt","Bal PCS","Bal CTS"],
+    rows,
+    [
+      "GRAND TOTAL",
+      fmt0(grandTP),
+      fmt2(grandTC),
+      fmt2(grandTA),
+      fmt0(grandSP),
+      fmt2(grandSC),
+      fmt2(grandSA),
+      fmt0(grandTP - grandSP),
+      fmt2(grandTC - grandSC)
+    ]
+  );
+}
+
+/* Party Summary — SELL only, stone-filtered */
+function computeParty() {
+  const map = {}; // party -> sold metrics
+  groups.forEach(g=>{
+    const a = g.add; if(!passStone(a)) return;
+    g.sells.filter(s=>passStone(s)).forEach(s=>{
+      const key = s.party || 'N/A';
+      if(!map[key]) map[key]={sPCS:0,sCTS:0,sAMT:0};
+      map[key].sPCS += Math.abs(+s.pcs||0);
+      map[key].sCTS += Math.abs(+s.cts||0);
+      map[key].sAMT += Math.abs(+s.amount||0);
+    });
+  });
+  const rows = [];
+  let totSP=0, totSC=0, totSA=0;
+  Object.keys(map).sort().forEach(key=>{
+    const m = map[key];
+    rows.push([key, fmt0(m.sPCS), fmt2(m.sCTS), fmt2(m.sAMT)]);
+    totSP+=m.sPCS; totSC+=m.sCTS; totSA+=m.sAMT;
+  });
+  renderSummaryTable(
+    ["Party","Sold PCS","Sold CTS","Sold Amount"],
+    rows,
+    ["TOTAL", fmt0(totSP), fmt2(totSC), fmt2(totSA)]
+  );
+}
+
+function renderActiveSummary(){
+  if(!summaryOpen) return;
+  highlightSummaryButton(activeSummary);
+
+  if(activeSummary==="overall"){ summaryTitle.textContent = "Showing: Overall Totals"; computeOverall(); return; }
+  if(activeSummary==="shape_size"){ summaryTitle.textContent = "Showing: Shape × Size"; computeShapeSize(); return; }
+  if(activeSummary==="stone_grade"){ summaryTitle.textContent = "Showing: Stone × Grade/LotNo (CAL includes Size)"; computeStoneGrade(); return; }
+  if(activeSummary==="lot"){ summaryTitle.textContent = "Showing: Lot Summary (with Stone subtotals)"; computeLot(); return; }
+  if(activeSummary==="party"){ summaryTitle.textContent = "Showing: Party Summary (SELL only)"; computeParty(); return; }
+}
+function highlightSummaryButton(key){
+  $$('.summaryBtn').forEach(b=>b.classList.remove('active'));
+  const btn = document.querySelector(`.summaryBtn[data-summary="${key}"]`);
+  if(btn) btn.classList.add('active');
+}
+
+/* Collapsible summary control */
+function setSummaryOpen(open,skipSave=false){
+  summaryOpen=open;
+  const body = byId('summaryCollapse');
+  const btn  = byId('btnToggleSummary');
+  if(open){
+    body.classList.add('show');
+    btn.textContent='Hide Summary ▴';
+    renderActiveSummary();
+  }else{
+    body.classList.remove('show');
+    btn.textContent='Show Summary ▾';
+  }
+  if(!skipSave) saveState();
+}
+
+/* Density toggle */
+function setDensity(compact,skipSave=false){
+  const wrap = byId('tableWrap');
+  if(compact){
+    wrap.classList.add('compact');
+    byId('btnDensity').textContent='Density: Compact';
+  }else{
+    wrap.classList.remove('compact');
+    byId('btnDensity').textContent='Density: Relaxed';
+  }
+  if(!skipSave) saveState();
+}
+
+/* Data load & normalize */
+async function loadAll(){
   const [ajAdd, calAdd, ajSell, calSell] = await Promise.all([
     get(ref(db,'/stoneamjz')),
     get(ref(db,'/stonecalibrate')),
@@ -337,7 +1038,11 @@ async function loadAll(){
     get(ref(db,'/sellCalibrate'))
   ]);
 
-  // ADD — AJMZ
+  movements = [];
+  const compAJ  = v => `${v.tx||''}||${v.lot||''}||${v.lotno||''}`;
+  const compCAL = v => `${v.tx||''}||${v.lot||''}||${(v.grade||v.lotno||'')}`;
+
+  // ADD AJMZ
   if(ajAdd.exists()){
     Object.values(ajAdd.val()).forEach(v=>{
       if(v && v.status==='ADD'){
@@ -345,165 +1050,144 @@ async function loadAll(){
           movement:'ADD', stone:'AJMZ',
           tx:v.tx||'', date:v.date||'', party:v.party||'',
           lot:v.lot||'', leg:v.lotno||'', shape:v.shape||'', size:'',
-          pcs:+(v.pcs||0), cts:+(v.cts||0), rate:+(v.price||0), amount:+(v.amount||0)
+          pcs:+(v.pcs||0), cts:+(v.cts||0), amount:+(v.amount||0),
+          composite:compAJ(v)
         });
       }
     });
   }
-  // ADD — CALIBRATE
+  // ADD CALIBRATE
   if(calAdd.exists()){
     Object.values(calAdd.val()).forEach(v=>{
       if(v && v.status==='ADD'){
         movements.push({
           movement:'ADD', stone:'CALIBRATE',
           tx:v.tx||'', date:v.date||'', party:v.party||'',
-          lot:v.lot||'', leg:v.grade||'', shape:v.shape||'', size:v.size||'',
-          pcs:0, cts:+(v.cts||0), rate:+(v.price||0), amount:+(v.amount||0)
+          lot:v.lot||'', leg:(v.grade||v.lotno||''), shape:v.shape||'', size:v.size||'',
+          pcs:0, cts:+(v.cts||0), amount:+(v.amount||0),
+          composite:compCAL(v)
         });
       }
     });
   }
-  // SELL — AJMZ (negative display as requested)
+  // SELL AJMZ
   if(ajSell.exists()){
     Object.values(ajSell.val()).forEach(v=>{
       movements.push({
         movement:'SELL', stone:'AJMZ',
         tx:v.tx||v.addTx||'', date:v.date||'', party:v.party||'',
         lot:v.lot||'', leg:v.lotno||'', shape:v.shape||'', size:'',
-        pcs:-Math.abs(+(v.pcs||0)), cts:-Math.abs(+(v.cts||0)),
-        rate:+(v.price||0), amount:-Math.abs(+(v.amount||0))
+        pcs:-Math.abs(+(v.pcs||0)), cts:-Math.abs(+(v.cts||0)), amount:-Math.abs(+(v.amount||0)),
+        composite:`${v.addTx||v.tx||''}||${v.lot||''}||${v.lotno||''}`
       });
     });
   }
-  // SELL — CALIBRATE
+  // SELL CALIBRATE
   if(calSell.exists()){
     Object.values(calSell.val()).forEach(v=>{
       movements.push({
         movement:'SELL', stone:'CALIBRATE',
         tx:v.tx||v.addTx||'', date:v.date||'', party:v.party||'',
-        lot:v.lot||'', leg:v.grade||'', shape:v.shape||'', size:v.size||'',
-        pcs:0, cts:-Math.abs(+(v.cts||0)),
-        rate:+(v.price||0), amount:-Math.abs(+(v.amount||0))
+        lot:v.lot||'', leg:(v.grade||v.lotno||''), shape:v.shape||'', size:v.size||'',
+        pcs:0, cts:-Math.abs(+(v.cts||0)), amount:-Math.abs(+(v.amount||0)),
+        composite:`${v.addTx||v.tx||''}||${v.lot||''}||${(v.grade||v.lotno||'')}`
       });
     });
   }
 
-  // init slicer state (no restrictions = show all)
-  slicerDefs.forEach(d=> slicerState[d.key]=new Set());
-  buildSlicers();
+  loadState();
+  applyFilters(true);
+}
+
+/* Events */
+byId('quickSearch').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ applyFilters(); }
+  if(e.key==='Escape'){ e.preventDefault(); byId('quickSearch').value=''; quickSearch=''; applyFilters(); }
+});
+byId('btnOpenOnly').addEventListener('click', ()=>{
+  openOnly = !openOnly;
+  byId('btnOpenOnly').textContent = openOnly ? 'Show All' : 'Show Open Balances';
   applyFilters();
-}
-
-/* ===== Filtering + Rendering ===== */
-function passSlicers(r){
-  for(const def of slicerDefs){
-    const sel=slicerState[def.key];
-    if(sel && sel.size){
-      if(!sel.has(String(r[def.key]??''))) return false;
-    }
-  }
-  return true;
-}
-function passDate(r){
-  const d1=byId('f_date_from').value;
-  const d2=byId('f_date_to').value;
-  if(d1 && (r.date||'')<d1) return false;
-  if(d2 && (r.date||'')>d2) return false;
-  return true;
-}
-function applyFilters(){
-  filtered = movements.filter(r=> passSlicers(r) && passDate(r) );
-  renderPills();
-  renderLedger();
-  renderBalances();
-}
-
-function renderLedger(){
-  const body=byId('tblMov').querySelector('tbody');
-  const rows=[...filtered].sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.tx||'').localeCompare(b.tx||''));
-  body.innerHTML = rows.map(r=>`
-    <tr class="${r.movement==='SELL'?'sell':'add'}">
-      <td>${r.movement}</td>
-      <td>${r.stone}</td>
-      <td>${r.tx}</td>
-      <td>${r.date}</td>
-      <td>${r.party}</td>
-      <td>${r.lot}</td>
-      <td>${r.leg}</td>
-      <td>${r.shape}</td>
-      <td>${r.size||''}</td>
-      <td class="mono">${fmt0(Math.abs(r.pcs))}</td>
-      <td class="mono">${fmt2(Math.abs(r.cts))}</td>
-      <td class="mono">${r.rate?fmt2(r.rate):''}</td>
-      <td class="mono">${fmt2(Math.abs(r.amount))}</td>
-    </tr>
-  `).join('');
-
-  // Visible-only subtotals
-  const tPCS = rows.reduce((s,r)=>s + (+r.pcs||0),0);
-  const tCTS = rows.reduce((s,r)=>s + (+r.cts||0),0);
-  const tAMT = rows.reduce((s,r)=>s + (+r.amount||0),0);
-  byId('sumPCS').textContent=fmt0(tPCS);
-  byId('sumCTS').textContent=fmt2(tCTS);
-  byId('sumAMT').textContent=fmt2(tAMT);
-}
-
-function renderBalances(){
-  // Group by Stone + Lot + LotNo/Grade (visible rows only)
-  const map = new Map();
-  for(const r of filtered){
-    const k = `${r.stone}||${r.lot}||${r.leg}`;
-    const o = map.get(k)||{stone:r.stone, lot:r.lot, leg:r.leg, pcs:0, cts:0, amt:0};
-    o.pcs += (+r.pcs||0);
-    o.cts += (+r.cts||0);
-    o.amt += (+r.amount||0);
-    map.set(k,o);
-  }
-  const rows = [...map.values()].sort((a,b)=>(a.stone+a.lot+a.leg).localeCompare(b.stone+b.lot+b.leg));
-  const body=byId('tblBal').querySelector('tbody');
-  body.innerHTML = rows.map(r=>`
-    <tr>
-      <td>${r.stone}</td>
-      <td>${r.lot}</td>
-      <td>${r.leg}</td>
-      <td class="mono">${fmt0(r.pcs)}</td>
-      <td class="mono">${fmt2(r.cts)}</td>
-      <td class="mono">${fmt2(r.amt)}</td>
-    </tr>
-  `).join('');
-
-  // Visible-only balance totals
-  const bPCS = rows.reduce((s,r)=>s + (+r.pcs||0),0);
-  const bCTS = rows.reduce((s,r)=>s + (+r.cts||0),0);
-  const bAMT = rows.reduce((s,r)=>s + (+r.amt||0),0);
-  byId('bPCS').textContent=fmt0(bPCS);
-  byId('bCTS').textContent=fmt2(bCTS);
-  byId('bAMT').textContent=fmt2(bAMT);
-}
-
-/* ===== Buttons ===== */
-byId('btnClear').onclick=()=>{
-  slicerDefs.forEach(d=> slicerState[d.key]=new Set());
+});
+byId('btnClear').addEventListener('click', ()=>{
   byId('f_date_from').value=''; byId('f_date_to').value='';
+  byId('quickSearch').value=''; quickSearch='';
+  openOnly=false; byId('btnOpenOnly').textContent='Show Open Balances';
+  expanded.clear();
+  activeSummary = 'overall';
+  highlightSummaryButton(activeSummary);
+  setSummaryOpen(false);
+  stoneFilter='ALL';
+  $$('.stoneBtn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.stoneBtn[data-stone="ALL"]').classList.add('active');
   applyFilters();
-};
-byId('btnExport').onclick=()=>{
-  const header=['Movement','Stone','Transaction No','Date','Party','Lot','Lot No / Grade','Shape','Size','PCS','CTS','Rate','Amount'];
-  const data = [header].concat(filtered.map(r=>[
-    r.movement,r.stone,r.tx,r.date,r.party,r.lot,r.leg,r.shape,r.size,(+r.pcs||0),(+r.cts||0),(+r.rate||0),(+r.amount||0)
-  ]));
-  const csv = data.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+});
+byId('btnExport').addEventListener('click', ()=>{
+  const rows=[[
+    '#','TX','Date','Party','Stone','Lot','Grade/LotNo','PCS','CTS','Total Amount','Total Sold','BAL PCS','BAL CTS','# OF SELLS','RowType'
+  ]];
+  let rownum=1;
+  groups.forEach(g=>{
+    const a=g.add;
+    const sells=[...g.sells].sort((x,y)=> (String(x.date).localeCompare(String(y.date)) || String(x.tx).localeCompare(String(y.tx))));
+    const origPCS=+a.pcs||0, origCTS=+a.cts||0, origAMT=+a.amount||0;
+    const balP = origPCS + sells.reduce((s,x)=>s+(+x.pcs||0),0);
+    const balC = origCTS + sells.reduce((s,x)=>s+(+x.cts||0),0);
+    const sold = sells.reduce((s,x)=>s+abs(+x.amount||0),0);
+
+    rows.push([rownum++,a.tx,a.date,a.party,a.stone,a.lot,a.leg,origPCS,origCTS,origAMT,sold,balP,balC,sells.length,'ADD']);
+
+    let p=origPCS, c=origCTS;
+    sells.forEach(s=>{
+      p+=(+s.pcs||0); c+=(+s.cts||0);
+      rows.push(['→',s.tx,s.date,s.party,s.stone,s.lot,s.leg,s.pcs,s.cts,'',abs(+s.amount||0),p,c,'','SELL']);
+    });
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=`inventory-report-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download=`inventory-add-sell-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
-};
-byId('btnPrint').onclick=()=>window.print();
+});
+byId('btnPrint').addEventListener('click', ()=> window.print());
+byId('btnExpandAll').addEventListener('click', ()=>{
+  expanded = new Set(groups.map(g=>g.add.composite));
+  renderLedger(); saveState();
+});
+byId('btnCollapseAll').addEventListener('click', ()=>{
+  expanded.clear(); renderLedger(); saveState();
+});
+byId('btnDensity').addEventListener('click', ()=>{
+  compactMode = !compactMode; setDensity(compactMode);
+});
+byId('f_date_from').addEventListener('change', ()=>applyFilters());
+byId('f_date_to').addEventListener('change',   ()=>applyFilters());
 
-byId('f_date_from').addEventListener('change',applyFilters);
-byId('f_date_to').addEventListener('change',applyFilters);
+document.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); byId('btnExport').click(); }
+  if((e.ctrlKey||e.metaKey) && e.key==='/'){ e.preventDefault(); byId('btnClear').click(); }
+  if(e.shiftKey && e.key.toLowerCase()==='e'){ e.preventDefault(); byId('btnExpandAll').click(); }
+  if(e.shiftKey && e.key.toLowerCase()==='c'){ e.preventDefault(); byId('btnCollapseAll').click(); }
+});
 
-/* Boot */
+/* Summary buttons + toggle + stone pills */
+document.addEventListener("click",e=>{
+  if(e.target.matches(".summaryBtn")){
+    activeSummary = e.target.dataset.summary;
+    renderActiveSummary(); saveState();
+  }
+  if(e.target.matches("#btnToggleSummary")){
+    setSummaryOpen(!summaryOpen);
+  }
+  if(e.target.matches(".stoneBtn")){
+    stoneFilter = e.target.dataset.stone;
+    $$('.stoneBtn').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    renderActiveSummary(); saveState();
+  }
+});
+
+/* Init */
 loadAll();
 </script>
 </body>
