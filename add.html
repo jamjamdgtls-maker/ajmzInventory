@@ -1,1078 +1,1298 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Stones Entry — ADD Module</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ADD — AJMZ & CALIBRATE</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 :root{
   --bg:#F5F5F0;
-  --panel:#E6D8C3;
-  --accent:#5D866C;
   --accent-2:#C2A68C;
   --ink:#2f3b33;
-  --muted:#6b776f;
+  --ink-soft:#5b6a5f;
   --line:#d9cbb1;
+  --line-strong:#c5b28f;
   --shadow:rgba(93,134,108,.18);
-  --green:#5D866C;
-  --green-dark:#4c6f59;
-  --danger:#b94b4b;
-  --danger-dark:#9c3e3e;
+  --white:#fff;
+  --muted:#f9f7f1;
+  --ok:#5D866C;
+  --focus:#4f7b61;
+
+  --chip-bg:#ffffff;
+  --chip-line:#d9d9d9;
+  --chip-ink:#34423a;
+
+  --modal-backdrop:rgba(0,0,0,.35);
 }
 
-/* Global Layout */
+/* Reset + base */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  font-family:Inter, system-ui, sans-serif;
-  background:var(--bg);
-  color:var(--ink);
-  display:flex;
-  overflow:hidden;
+  font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg); color:var(--ink);
+  display:flex; height:100vh; overflow:hidden;
 }
 
-/* NAVIGATION BAR (LEFT-MOST) */
+/* Left fixed nav */
 .nav-vertical{
-  width:60px;
-  background:#fff;
-  border-right:3px solid var(--accent-2);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:14px 0;
-  gap:20px;
-  box-shadow:6px 0 20px var(--shadow);
+  width:60px;background:#fff;border-right:3px solid var(--accent-2);
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  padding:14px 0;box-shadow:6px 0 20px var(--shadow);
+  position:fixed;left:0;top:0;bottom:0;z-index:2000;
 }
 .nav-item{
-  width:44px;height:44px;
-  border-radius:12px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;cursor:pointer;
-  text-decoration:none;color:var(--ink);
-  background:#fff;border:1px solid var(--line);
-  transition:.25s;
-  position:relative;
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;text-decoration:none;color:var(--ink);
+  background:#fff;border:1px solid var(--line);cursor:pointer;font-weight:600;transition:.15s;user-select:none;
 }
-.nav-item:hover{background:var(--panel);transform:translateX(2px);}
-.nav-item.active{background:var(--accent);color:#fff;border:none;}
-.nav-item::after{
-  content:attr(data-label);
-  position:absolute;left:60px;
-  background:#fff;border:1px solid var(--line);
-  padding:4px 10px;border-radius:8px;
-  white-space:nowrap;box-shadow:0 6px 18px var(--shadow);
-  font-size:12px;opacity:0;pointer-events:none;
-  transform:translateY(5px);transition:.2s;
-}
-.nav-item:hover::after{opacity:1;transform:translateY(0);}
+.nav-item:hover{background:#faf8f0}
+.nav-item.active{background:#5D866C;color:#fff;border-color:transparent}
 
-/* LEFT PANEL (NARROWED) */
-.left{
-  width:20%;
-  min-width:260px;
-  background:linear-gradient(180deg,var(--panel),#efe5cf);
-  border-right:3px solid var(--accent-2);
-  box-shadow:6px 0 20px var(--shadow);
-  padding:12px;
+/* Workspace */
+.workspace{
+  flex:1;
+  margin-left:60px;
+  height:100vh;
+  padding:18px 18px 90px;
   overflow:auto;
 }
 
-/* RIGHT PANEL AUTO EXPANDS */
-.right{
-  flex:1;
-  padding:0;
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-  overflow:hidden;
-  position:relative;
+/* Control bar */
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 8px 22px var(--shadow);padding:12px;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line);border-radius:999px;
+  padding:4px 8px;background:#fff;font-size:12px;color:var(--ink-soft)
+}
+.kbd{
+  font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;
+  background:#eef4ef;border:1px solid #d8e3da;border-radius:6px;padding:1px 5px
+}
+.spacer{flex:1}
+.button{
+  height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;
+  padding:0 14px;font-size:14px;color:var(--ink);
+  outline:none;transition:border-color .12s, box-shadow .12s;
+  font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+}
+.button:hover{background:#faf8f0}
+.button.soft{background:var(--muted)}
+.button.small{height:30px;font-size:12px;border-radius:8px}
+
+/* Global tabs (AJMZ | Calibrate) */
+.global-tabs{margin-top:12px;display:flex;gap:8px}
+.gtab{
+  padding:8px 12px;border:1px solid var(--line);border-radius:999px;
+  background:#fff;color:#4b5a50;font-weight:800;cursor:pointer
+}
+.gtab.active{background:var(--ok);color:#fff;border-color:transparent}
+
+/* Card */
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 8px 22px var(--shadow);
+  margin-top:14px; overflow:hidden;
 }
 
-/* ===== Original ADD Module Styles (preserved) ===== */
-.global-actions{
-  position:absolute; top:10px; right:12px; z-index:10;
-  display:flex; gap:8px; align-items:center;
+/* Forms */
+.formbar{
+  padding:14px;
+  border-bottom:1px solid var(--line);
+  background:#faf8f4;
 }
-.icon-btn{
-  cursor:pointer; border:none; padding:8px 10px; border-radius:999px;
-  background:#fff; color:var(--accent); box-shadow:0 6px 14px var(--shadow);
-  border:1px solid var(--line); font-weight:600; font-size:13px;
+.form-section{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+  gap:14px 18px;
 }
-.icon-btn:hover{ background:#f8f6f0 }
+.form-field{display:flex;flex-direction:column}
+.form-label{
+  font-size:12px;font-weight:600;color:#5b6a5f;margin-bottom:4px;letter-spacing:.02em
+}
+.form-input,.form-select,.form-textarea{
+  height:38px;border-radius:10px;border:1px solid var(--line);
+  background:#fff;padding:0 12px;font-size:14px;color:var(--ink);
+  outline:none;transition:.15s border-color,.15s box-shadow
+}
+.form-textarea{
+  height:38px;padding:8px 12px;resize:vertical;min-height:38px
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  border-color:var(--focus);box-shadow:0 0 0 2px rgba(79,123,97,.2)
+}
+.readonly{background:#f1f1ec;color:#7a857c;pointer-events:none}
+.form-actions{display:flex;gap:10px;align-items:end}
 
-/* Headings */
-h1{font-size:20px;color:var(--accent);margin-bottom:8px}
-h2{font-size:16px;color:var(--accent);margin:14px 0 8px}
-p.note{font-size:12px;color:var(--muted);margin-bottom:10px}
-
-/* Form */
-label{display:block;font-size:13px;margin:8px 0 4px}
-input,select,textarea{
+/* Table */
+.table-area{padding:10px}
+.table-wrap{
+  border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;background:#fff
+}
+.table{
   width:100%;
-  padding:8px 10px;
-  border:1px solid var(--line);
-  border-radius:10px;
-  background:#fff;
+  border-collapse:separate;border-spacing:0;
+  table-layout:fixed;
   font-size:13px;
 }
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.row>div{flex:1}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  background:var(--accent);color:#fff;border:none;border-radius:10px;
-  padding:10px 14px;margin-top:10px;font-weight:600;cursor:pointer;
-  box-shadow:0 6px 14px var(--shadow); transition:.15s;
-  text-decoration:none;
+.table thead th{
+  position:sticky;top:0;background:#f3efe6;border-bottom:1px solid var(--line);
+  color:#4b5a50;text-align:left;padding:8px 6px;font-weight:700;z-index:1;
+  white-space:normal;word-break:break-word
 }
-.btn:hover{background:var(--green-dark)}
-.btn.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}
-.btn.secondary:hover{background:#f8f6f0}
-.btn.green{background:var(--green);color:#fff}
-.btn.green:hover{background:var(--green-dark)}
-.btn.danger{background:var(--danger)}
-.btn.danger:hover{background:var(--danger-dark)}
-.btn.block{width:100%}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px;justify-content:flex-end}
-
-/* Sections (full height) */
-.section{
-  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px var(--shadow);
-  margin:0;padding:10px;flex:1;display:flex;flex-direction:column;height:100%;
+.table tbody td{
+  border-bottom:1px solid var(--line);color:#2f3b33;padding:6px 6px;vertical-align:top;
+  white-space:normal;word-break:break-word
 }
-.section .head{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 8px}
-.kpis{display:flex;gap:10px;flex-wrap:wrap}
-.kpis .chip{background:#fff;border:1px solid var(--line);padding:6px 8px;border-radius:999px;font-size:12px}
-.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#eef3ea;font-weight:600;color:var(--accent);font-size:11px}
-
-.section > .table-wrap{
-  flex:1 1 auto;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;position:relative;
-}
-
-/* Tables */
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-thead th{
-  position:sticky;top:0;background:var(--panel);
-  text-align:left;padding:8px;border-bottom:1px solid var(--line);z-index:1
-}
-tbody td{padding:8px;border-bottom:1px solid #e9dec9;vertical-align:top; position:relative;}
-tbody tr:hover{background:#faf8f0}
-tfoot td{
-  position:sticky;bottom:0;background:#e7dbc5;border-top:1px solid var(--line);
-  padding:8px;font-weight:700
-}
-tfoot .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
-
-/* Editable cell wrapper + persistent + button */
-.cell-wrap{
-  display:flex; align-items:flex-start; gap:6px; position:relative;
-}
+.table tbody tr:nth-child(even){background:#faf8f4}
 .cell{
-  outline:none;border-radius:6px;padding:4px 6px;min-width:40px;
-  display:inline-block;
+  padding:4px 6px;border:1px solid transparent;border-radius:8px;
+  min-height:28px;position:relative
 }
-
-/* Floating + picker trigger */
-.plus-trigger{
-  position:absolute; right:6px; top:6px;
-  background:#fff; border:1px solid var(--line); border-radius:6px;
-  padding:2px 6px; font-weight:700; color:var(--accent);
-  cursor:pointer; box-shadow:0 4px 10px var(--shadow);
-  user-select:none;
-  display:none;
+.cell[contenteditable="true"]:focus{
+  outline:none;border-color:var(--focus);background:#f2f8f4;
+  box-shadow:inset 0 0 0 2px rgba(79,123,97,.18)
 }
-td:hover .plus-trigger{ display:inline-block; }
-
-/* The small picker panel */
-.picker{
-  position:absolute; z-index:50; min-width:220px; max-width:280px;
-  background:#fff; border:1px solid var(--line); border-radius:12px;
-  box-shadow:0 20px 40px rgba(93,134,108,.25);
-  padding:10px; display:none;
+.td-actions{white-space:nowrap}
+.row-btn{
+  height:26px;border-radius:8px;border:1px solid var(--line);
+  background:#fff;padding:0 8px;font-size:12px;cursor:pointer
 }
-.picker h5{margin-bottom:8px; color:var(--accent); font-size:13px}
-.picker .options{max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:6px; background:#faf8f0}
-.picker label{display:flex; align-items:center; gap:8px; margin:6px 0;}
-.picker .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:8px}
-.picker .actions .btn{margin:0; padding:6px 10px; font-size:12px}
+.row-btn:hover{background:#faf8f0}
+.row-btn.del{border-color:#e5c2c2}
 
-/* Modal */
+/* Centered Modal for Shape / Size choosers */
+.center-modal-backdrop{
+  position:fixed;inset:0;background:var(--modal-backdrop);display:none;
+  align-items:center;justify-content:center;z-index:5000
+}
+.center-modal{
+  width:min(520px,92vw);max-height:min(70vh,680px);overflow:auto;
+  background:#fff;border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.28)
+}
+.center-modal .head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--line);background:#faf8f4
+}
+.center-modal .title{font-weight:800}
+.center-modal .body{padding:14px 16px}
+.center-modal .foot{
+  display:flex;gap:10px;justify-content:flex-end;
+  padding:12px 16px;border-top:1px solid var(--line);background:#faf8f4
+}
+.grid-2{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px
+}
+.choice{
+  display:flex;align-items:center;gap:10px;
+  border:1px solid var(--line);border-radius:10px;
+  padding:8px 10px;cursor:pointer
+}
+.choice:hover{background:#faf8f0}
+.choice input{transform:scale(1.1)}
+.choice label{flex:1;cursor:pointer}
+
+/* Saved list modal */
 .modal-backdrop{
-  position:fixed;inset:0;background:rgba(47,59,51,.35);backdrop-filter:blur(3px);
-  display:none;align-items:center;justify-content:center;padding:20px;z-index:100;
+  position:fixed;inset:0;background:rgba(0,0,0,.25);
+  display:none;align-items:center;justify-content:center;z-index:3000
 }
 .modal{
-  width:min(760px,96vw);background:linear-gradient(180deg,#fff,#fbfaf5);
-  border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 60px rgba(93,134,108,.30);
-  padding:18px
+  width:min(920px,92vw);background:#fff;border:1px solid var(--line);
+  border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.2);overflow:hidden
 }
-.modal h3{color:var(--accent);margin-bottom:8px}
-.tabbar{display:flex;gap:8px;margin:8px 0 12px}
-.tabbar .tab{
-  padding:8px 12px;border-radius:999px;border:1px solid var(--line);
-  background:#fff;color:#2f3b33;cursor:pointer;font-weight:600
+.modal-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;border-bottom:1px solid var(--line);background:#faf8f4
 }
-.tabbar .tab.active{background:var(--panel); color:#2f3b33}
-.grid-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.listbox{
-  border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;
-  max-height:300px;overflow:auto
+.modal-title{font-weight:800;letter-spacing:.02em}
+.modal-body{padding:14px 16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.list-card{
+  border:1px solid var(--line);border-radius:12px;
+  padding:10px;background:#fff
+}
+.list-card h4{font-size:13px;margin-bottom:8px;color:#anink-soft}
+.list-editor{display:flex;gap:6px;margin-bottom:8px}
+.item-list{
+  display:flex;flex-wrap:wrap;gap:6px;
+  max-height:220px;overflow:auto
 }
 .item{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:6px 8px;border:1px solid #dccaa8;border-radius:10px;background:#faf6ec;margin-bottom:8px
+  display:inline-flex;gap:6px;align-items:center;
+  border:1px solid var(--line);border-radius:999px;
+  padding:4px 8px;background:#faf8f4
 }
-.item .name{font-size:13px}
-.item .del{border:none;background:var(--danger);color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer}
-.modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.item button{
+  border:none;background:transparent;color:#b25d5d;
+  font-weight:800;cursor:pointer
+}
+.modal-foot{
+  display:flex;justify-content:flex-end;gap:8px;
+  padding:12px 16px;border-top:1px solid var(--line);background:#faf8f4
+}
 
-/* Toast & helpers */
-#toast{
-  position:fixed; right:18px; bottom:18px; z-index:200;
-  background:#fff; border:1px solid var(--line); color:var(--ink);
-  padding:10px 14px; border-radius:12px; box-shadow:0 10px 24px var(--shadow);
-  display:none; font-weight:600;
+/* Responsive tweaks */
+@media (max-width:1100px){
+  .workspace{padding:16px}
+  .form-section{grid-template-columns:repeat(auto-fill, minmax(200px, 1fr))}
 }
-.hidden{display:none}
-.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
-hr.sep{border:none;border-top:1px solid var(--line);margin:10px 0}
-.w100{width:100%}
+@media (max-width:920px){
+  .workspace{padding:12px}
+  .panel{padding:10px}
+}
 </style>
 </head>
 <body>
 
-<!-- VERTICAL NAVIGATION -->
+<!-- Left Navigation -->
 <div class="nav-vertical">
-  <a href="index.html" class="nav-item" data-label="Account">👤</a>
-  <a href="add.html" class="nav-item active" data-label="Add">➕</a>
-  <a href="sell.html" class="nav-item" data-label="Sell">💎</a>
-    <a href="reports.html" class="nav-item" data-label="Report">📊</a>
+  <a href="index.html" class="nav-item active" title="Add">➕</a>
+  <a href="added.html" class="nav-item" title="Added">📝</a>
+  <a href="sell.html" class="nav-item" title="Sell">💎</a>
+  <a href="reports.html" class="nav-item" title="Reports">📊</a>
+  <a href="reports2.html" class="nav-item" title="Reports">📊</a>
+  <a href="reports3.html" class="nav-item" title="Reports">📊</a>
 </div>
 
-<!-- LEFT PANEL -->
-<div class="left">
-  <h1>Add Stones (Status: ADD)</h1>
-  <p class="note">Generate new <b>ADD</b> rows for AJMZ or Calibrate. Use arrow keys to navigate cells like in Sheets.</p>
+<!-- MAIN WORKSPACE -->
+<div class="workspace">
 
-  <label>Target Table</label>
-  <select id="targetTable">
-    <option value="AJMZ" selected>AJMZ</option>
-    <option value="CAL">Calibrate</option>
-  </select>
-
-  <h2>Main Details</h2>
-  <div class="row">
-    <div>
-      <label>Stone</label>
-      <input id="stone" placeholder="e.g., AJMZ / Calibrate">
-    </div>
-    <div>
-      <label>Date</label>
-      <input type="date" id="date">
-    </div>
+  <!-- Top Status / Actions Panel -->
+  <div class="panel" style="display:flex;align-items:center;gap:10px;">
+    <span class="badge">⌨️ Excel Editing (<span class="kbd">Arrows</span>/<span class="kbd">Tab</span>/<span class="kbd">Enter</span>)</span>
+    <span class="badge">⚡ Auto-save</span>
+    <div class="spacer"></div>
+    <button class="button soft" id="openSavedListsBtn">📚 Saved List</button>
+    <button class="button" id="clearRowsBtn">🗑 Clear Rows</button>
+    <button class="button" id="clearAllBtn">🧹 Clear All</button>
+    <button class="button" id="submitToFirebase">🚀 Submit</button>
   </div>
 
-  <div class="row">
-    <div>
-      <label>Party</label>
-      <input id="party" placeholder="Supplier / Buyer">
-    </div>
-    <div>
-      <label>Deet</label>
-      <input id="deet" placeholder="Invoice / Reference">
-    </div>
+  <!-- Unified MODE Toggle (AJMZ | Calibrate) -->
+  <div class="global-tabs">
+    <button class="gtab active" data-mode="AJMZ">AJMZ</button>
+    <button class="gtab" data-mode="CALIB">Calibrate</button>
   </div>
 
-  <!-- AJMZ Lot Fields -->
-  <div id="ajmzLotFields">
-    <h2>Lot Details (AJMZ Only)</h2>
-    <div class="row">
-      <div>
-        <label>Lot Name</label>
-        <input id="lotName" placeholder="e.g., AJMZ 1">
+  <!-- Card wrapper -->
+  <div class="card">
+
+    <!-- ✅ AJMZ FORM -->
+    <div class="formbar" id="formbarAJMZ">
+      <div class="form-section">
+        <div class="form-field">
+          <label class="form-label">Stone</label>
+          <input class="form-input readonly" value="AJMZ" readonly>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="ajmz_date">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Party</label>
+          <input class="form-input" id="ajmz_party" placeholder="Supplier / Customer">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Deet</label>
+          <input class="form-input" id="ajmz_deet" placeholder="Reference / Details">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Lot Name</label>
+          <select class="form-select" id="ajmz_lotName"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Lot Format</label>
+          <input class="form-input" id="ajmz_lotFormat" placeholder="e.g., 2/000 or 2/0001">
+        </div>
+        <div class="form-field">
+          <label class="form-label">How Many Rows</label>
+          <input type="number" class="form-input" id="ajmz_rows" min="1" step="1" value="1">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Description</label>
+          <input class="form-input" id="ajmz_desc">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Shape (initial)</label>
+          <select class="form-select" id="ajmz_shape"></select>
+        </div>
       </div>
-      <div>
-        <label>Lot Format (Base / Start No.)</label>
-        <input id="lotFormat" placeholder="e.g., 1 or 4/001">
-      </div>
-      <div>
-        <label>How many Lot Nos?</label>
-        <input type="number" id="lotCount" min="1" max="5000" value="100">
+      <div class="form-actions" style="margin-top:10px;">
+        <button class="button" id="ajmz_generate">Generate Rows</button>
       </div>
     </div>
-    <p class="note">Example: Lot Name = <b>AJMZ 4</b>, Lot Format = <b>4</b>, Count = <b>1000</b> → generates <b>4/0001…4/1000</b>. “Lot” column shows exactly <b>AJMZ 4</b>.</p>
-  </div>
 
-  <!-- Calibrate fields -->
-  <div id="calOnly" class="hidden">
-    <label>Calibrate Grade (default)</label>
-    <input id="defGrade" placeholder="A">
-    <div class="row">
-      <div>
-        <label>Calibrate Size (default)</label>
-        <input id="defSize" placeholder="2×2">
+    <!-- ✅ CALIBRATE FORM -->
+    <div class="formbar" id="formbarCALIB" style="display:none">
+      <div class="form-section">
+        <div class="form-field">
+          <label class="form-label">Stone</label>
+          <input class="form-input readonly" value="Calibrate" readonly>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="cal_date">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Party</label>
+          <input class="form-input" id="cal_party" placeholder="Supplier / Customer">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Deet</label>
+          <input class="form-input" id="cal_deet" placeholder="Reference / Details">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Lot Name</label>
+          <select class="form-select" id="cal_lotName"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Base Grade</label>
+          <input class="form-input" id="cal_grade" placeholder="#1">
+        </div>
+        <div class="form-field">
+          <label class="form-label">How Many Rows</label>
+          <input type="number" class="form-input" id="cal_rows" min="1" step="1" value="1">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Description</label>
+          <input class="form-input" id="cal_desc">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Shape (initial)</label>
+          <select class="form-select" id="cal_shape"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Size (initial)</label>
+          <select class="form-select" id="cal_size"></select>
+        </div>
       </div>
-      <div>
-        <label>How many Lot Nos?</label>
-        <input type="number" id="calLotCount" min="1" max="5000" value="100">
+      <div class="form-actions" style="margin-top:10px;">
+        <button class="button" id="cal_generate">Generate Rows</button>
       </div>
     </div>
-    <div class="row">
-      <div>
-        <label>Lot</label>
-        <input id="calLot" placeholder="1  or  2/001">
+
+    <!-- ✅ TABLE AREA for AJMZ -->
+    <div class="table-area" id="tableAreaAJMZ">
+      <div class="table-wrap">
+        <table class="table" id="tableAJMZ">
+          <thead>
+            <tr>
+              <th>Tx ID</th>
+              <th>Stone</th>
+              <th>Date</th>
+              <th>Party</th>
+              <th>Deet</th>
+              <th>Lot Name</th>
+              <th>Lot Format</th>
+              <th>Description</th>
+              <th>Shape</th>
+              <th>CTS</th>
+              <th>PCS</th>
+              <th>Price</th>
+              <th>Amount</th>
+              <th>Remarks</th>
+              <th class="td-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAJMZ"></tbody>
+        </table>
       </div>
-      <div>
-        <label>Link to AJMZ Lot(s)</label>
-        <select id="ajmzLink" multiple size="6" style="height:auto"></select>
+      <div class="table-metrics" id="ajmzCount"></div>
+    </div>
+
+    <!-- ✅ TABLE AREA for CALIBRATE -->
+    <div class="table-area" id="tableAreaCALIB" style="display:none">
+      <div class="table-wrap">
+        <table class="table" id="tableCAL">
+          <thead>
+            <tr>
+              <th>Tx ID</th>
+              <th>Stone</th>
+              <th>Date</th>
+              <th>Party</th>
+              <th>Deet</th>
+              <th>Lot Name</th>
+              <th>Grade</th>
+              <th>Description</th>
+              <th>Shape</th>
+              <th>Size</th>
+              <th>CTS</th>
+              <th>Price</th>
+              <th>Amount</th>
+              <th>Remarks</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCAL"></tbody>
+        </table>
+      </div>
+      <div class="table-metrics" id="calCount"></div>
+    </div>
+
+  </div> <!-- /card -->
+
+</div> <!-- /workspace -->
+
+<!-- ✅ SAVED LIST MODAL (Lot Names, Shapes, Sizes) -->
+<div class="modal-backdrop" id="savedModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="savedTitle">
+    <div class="modal-head">
+      <div class="modal-title" id="savedTitle">📚 Saved Lists</div>
+      <button class="button small" id="closeSavedBtn">✕ Close</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="grid-3">
+        <!-- LOT NAMES -->
+        <div class="list-card">
+          <h4>Lot Names</h4>
+          <div class="list-editor">
+            <input class="form-input" id="lotNameInput" placeholder="Add new lot name">
+            <button class="button small" id="lotNameAdd">Add</button>
+          </div>
+          <div class="item-list" id="lotNameList"></div>
+        </div>
+
+        <!-- SHAPES -->
+        <div class="list-card">
+          <h4>Shapes</h4>
+          <div class="list-editor">
+            <input class="form-input" id="shapeInput" placeholder="Add new shape">
+            <button class="button small" id="shapeAdd">Add</button>
+          </div>
+          <div class="item-list" id="shapeList"></div>
+        </div>
+
+        <!-- SIZES -->
+        <div class="list-card">
+          <h4>Sizes</h4>
+          <div class="list-editor">
+            <input class="form-input" id="sizeInput" placeholder="Add new size">
+            <button class="button small" id="sizeAdd">Add</button>
+          </div>
+          <div class="item-list" id="sizeList"></div>
+        </div>
       </div>
     </div>
-    <p class="note">Remarks are left empty intentionally. (Links are for your reference only.)</p>
+
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="button" id="saveSavedLists">Save</button>
+    </div>
   </div>
-
-  <!-- Submission status (shows after submit) -->
-  <div id="lastTxDisplay" style="margin-top:10px;font-size:13px;color:var(--muted);display:none;">
-    <b>Last Submitted Transaction:</b> <span id="lastTxNo"></span>
-  </div>
-
-  <button class="btn" id="btnGenerate">Generate ADD Rows</button>
-
-  <h2>Tools</h2>
-  <!-- Submit button is RED -->
-  <button class="btn danger" id="btnSubmit">Submit record.</button>
-
-  <hr class="sep" />
 </div>
 
-<!-- RIGHT PANEL -->
-<div class="right">
-  <div class="global-actions">
-    <button class="icon-btn" id="btnSettings">⚙️ Saved Lists</button>
-  </div>
-
-  <!-- AJMZ SECTION -->
-  <div class="section" id="secAJMZ">
+<!-- 🔳 Centered chooser modal (re-used for Shape & Size) -->
+<div class="center-modal-backdrop" id="chooserBackdrop">
+  <div class="center-modal" role="dialog" aria-modal="true" aria-labelledby="chooserTitle">
     <div class="head">
-      <h3>AJMZ — Transactions</h3>
+      <div class="title" id="chooserTitle">Choose</div>
+      <button class="button small" id="chooserClose">✕</button>
     </div>
-    <div class="toolbar">
-      <button class="btn secondary" id="btnAJMZClear">🧹 Clear</button>
+    <div class="body">
+      <div id="chooserContainer"></div>
     </div>
-    <div class="table-wrap">
-      <table id="tblAJMZ">
-        <thead>
-          <tr>
-            <th>Transaction No.</th>
-            <th>Stone</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Party</th>
-            <th>Deet</th>
-            <th>Lot</th>
-            <th>Lot No.</th>
-            <th>Description</th>
-            <th>Shape</th>
-            <th class="mono">Pcs</th>
-            <th class="mono">Cts</th>
-            <th class="mono">Price</th>
-            <th class="mono">Amount</th>
-            <th>Remark</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="10" style="text-align:right;font-weight:700;">TOTALS</td>
-            <td class="mono" id="aj_tot_pcs">0</td>
-            <td class="mono" id="aj_tot_cts">0</td>
-            <td></td>
-            <td class="mono" id="aj_tot_amt">0</td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-
-  <!-- CALIBRATE SECTION -->
-  <div class="section hidden" id="secCAL">
-    <div class="head">
-      <h3>CALIBRATE — Transactions</h3>
-    </div>
-    <div class="toolbar">
-      <button class="btn secondary" id="btnCALClear">🧹 Clear</button>
-    </div>
-    <div class="table-wrap">
-      <table id="tblCAL">
-        <thead>
-          <tr>
-            <th>Transaction No.</th>
-            <th>Stone</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Party</th>
-            <th>Deet</th>
-            <th>Lot</th>
-            <th>Grade</th>
-            <th>Description</th>
-            <th>Shape</th>
-            <th>Size</th>
-            <th class="mono">CTS</th>
-            <th class="mono">Price</th>
-            <th class="mono">Amount</th>
-            <th>Remarks</th>
-            <th>AJMZ</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="12" style="text-align:right;font-weight:700;">TOTALS</td>
-            <td class="mono" id="cal_tot_cts">0</td>
-            <td></td>
-            <td class="mono" id="cal_tot_amt">0</td>
-            <td></td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
+    <div class="foot">
+      <button class="button" id="chooserApply">✅ Apply</button>
     </div>
   </div>
 </div>
 
-<!-- Saved Lists Modal -->
-<div class="modal-backdrop" id="listsModal">
-  <div class="modal">
-    <h3>Manage Saved Lists</h3>
-    <div class="tabbar">
-      <button class="tab active" data-tab="shapes">Shapes</button>
-      <button class="tab" data-tab="sizes">Sizes</button>
-      <button class="tab" data-tab="links">AJMZ Links</button>
-    </div>
-
-    <div id="tabContent">
-      <!-- Shapes -->
-      <div class="tabpane" data-name="shapes">
-        <div class="grid-two">
-          <div>
-            <label>Add Shape</label>
-            <div class="row">
-              <input id="inShape" placeholder="e.g., Round">
-              <button class="btn green" id="btnAddShape">➕ Add</button>
-            </div>
-            <p class="note">These appear in the “+” picker for <b>Shape</b> cells.</p>
-          </div>
-          <div>
-            <div class="listbox" id="listShapes"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sizes -->
-      <div class="tabpane hidden" data-name="sizes">
-        <div class="grid-two">
-          <div>
-            <label>Add Size</label>
-            <div class="row">
-              <input id="inSize" placeholder="e.g., 2×2">
-              <button class="btn green" id="btnAddSize">➕ Add</button>
-            </div>
-            <p class="note">These appear in the “+” picker for <b>Size</b> cells.</p>
-          </div>
-          <div>
-            <div class="listbox" id="listSizes"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Links -->
-      <div class="tabpane hidden" data-name="links">
-        <div class="grid-two">
-          <div>
-            <label>Add AJMZ Link</label>
-            <div class="row">
-              <input id="inLink" placeholder="e.g., AJMZ1">
-              <button class="btn green" id="btnAddLink">➕ Add</button>
-            </div>
-            <p class="note">These appear in the “+” picker for the <b>AJMZ</b> column in Calibrate and in the left panel multi-select.</p>
-          </div>
-          <div>
-            <div class="listbox" id="listLinks"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button class="btn secondary" id="btnCloseLists">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- floating picker for + button -->
-<div class="picker" id="valuePicker">
-  <h5 id="pickerTitle">Add values</h5>
-  <div class="options" id="pickerOptions"></div>
-  <div class="actions">
-    <button class="btn secondary" id="pickerCancel">Cancel</button>
-    <button class="btn green" id="pickerApply">Apply</button>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast">✅ Submitted successfully!</div>
-
-<script type="module">
-/* ========= Utilities ========= */
-const sanitizeFloat = (v)=>{ const n=parseFloat((v||"").toString().replace(/,/g,"").trim()); return isFinite(n)?n:0; };
-const textToList = (txt)=> (txt||"").split(",").map(s=>s.trim()).filter(Boolean);
-const listToText = (arr)=> [...new Set(arr.map(s=>s.trim()).filter(Boolean))].join(", ");
-
-/* Lot number formatter with auto-padding */
-function lotNoFmt(base,seq,totalCount=100){
-  let padLen=3;
-  if(totalCount>=1000 && totalCount<10000) padLen=4;
-  else if(totalCount>=10000 && totalCount<100000) padLen=5;
-  else if(totalCount>=100000) padLen=6;
-  return `${base}/${String(seq).padStart(padLen,"0")}`;
-}
-const numericBaseFromFormat = (fmt)=>{ const m=(fmt||"").match(/\d+/); return m?m[0]:"1"; };
-
-/* Amount per row */
-function computeAmountRow(tr){
-  const ctsSpan = tr.querySelector('td[data-col="cts"] .cell');
-  const priceSpan = tr.querySelector('td[data-col="price"] .cell');
-  const amountSpan = tr.querySelector('td[data-col="amount"] .cell, td[data-col="amount"]');
-  if(!ctsSpan || !priceSpan) return;
-  const cts = sanitizeFloat(ctsSpan.textContent);
-  const price = sanitizeFloat(priceSpan.textContent);
-  const value = (cts*price||0).toLocaleString(undefined,{maximumFractionDigits:2});
-  if(amountSpan) amountSpan.textContent = value;
-}
-
-/* ========= Totals ========= */
-function updateTotals(tableId){
-  if(tableId==="AJMZ"){
-    const tbody = document.querySelector("#tblAJMZ tbody");
-    let sumPcs=0, sumCts=0, sumAmt=0;
-    tbody.querySelectorAll("tr").forEach(tr=>{
-      sumPcs += sanitizeFloat(tr.querySelector('td[data-col="pcs"] .cell')?.textContent||"0");
-      const cts = sanitizeFloat(tr.querySelector('td[data-col="cts"] .cell')?.textContent||"0");
-      const price = sanitizeFloat(tr.querySelector('td[data-col="price"] .cell')?.textContent||"0");
-      sumCts += cts; sumAmt += cts*price;
-    });
-    document.getElementById("aj_tot_pcs").textContent = sumPcs.toLocaleString();
-    document.getElementById("aj_tot_cts").textContent = sumCts.toLocaleString(undefined,{maximumFractionDigits:2});
-    document.getElementById("aj_tot_amt").textContent = sumAmt.toLocaleString(undefined,{maximumFractionDigits:2});
-  }else{
-    const tbody = document.querySelector("#tblCAL tbody");
-    let sumCts=0, sumAmt=0;
-    tbody.querySelectorAll("tr").forEach(tr=>{
-      const cts = sanitizeFloat(tr.querySelector('td[data-col="cts"] .cell')?.textContent||"0");
-      const price = sanitizeFloat(tr.querySelector('td[data-col="price"] .cell')?.textContent||"0");
-      sumCts += cts; sumAmt += cts*price;
-    });
-    document.getElementById("cal_tot_cts").textContent = sumCts.toLocaleString(undefined,{maximumFractionDigits:2});
-    document.getElementById("cal_tot_amt").textContent = sumAmt.toLocaleString(undefined,{maximumFractionDigits:2});
-  }
-}
-
-/* ========= Storage ========= */
-const STORAGE_KEYS={ AJMZ:'stones_AJMZ_data', CAL:'stones_CAL_data',
-  SHAPES:'saved_shapes', SIZES:'saved_sizes', LINKS:'saved_links' };
-
-function rowToObject(tr){
-  const obj={};
-  tr.querySelectorAll('td[data-col]').forEach(td=>{
-    const key=td.dataset.col;
-    const span=td.querySelector('.cell');
-    obj[key]=span? (span.textContent||""): (td.textContent||"");
-  });
-  return obj;
-}
-function saveTable(tableId){
-  const table=document.getElementById(tableId==="AJMZ"?"tblAJMZ":"tblCAL");
-  const data=[...table.querySelectorAll("tbody tr")].map(tr=>rowToObject(tr,tableId));
-  localStorage.setItem(STORAGE_KEYS[tableId],JSON.stringify(data));
-  updateTotals(tableId);
-}
-function buildCell(col, {editable=false, text="" , plus=null, mono=false}={}){
-  const td=document.createElement("td");
-  td.setAttribute("data-col", col);
-  const wrap=document.createElement("div"); wrap.className="cell-wrap";
-  const span=document.createElement("span"); span.className="cell"+(mono?" mono":"");
-  if(editable) span.setAttribute("contenteditable","true");
-  span.textContent = text || "";
-  wrap.appendChild(span);
-  if(plus){
-    const btn=document.createElement("button");
-    btn.className="plus-trigger"; btn.dataset.plus=plus; btn.textContent="+";
-    wrap.appendChild(btn);
-  }
-  td.appendChild(wrap);
-  return td;
-}
-function repaintTable(tableId){
-  const isAJ = tableId==="AJMZ";
-  const table=document.getElementById(isAJ?"tblAJMZ":"tblCAL");
-  const tbody=table.querySelector("tbody");
-  const raw=localStorage.getItem(STORAGE_KEYS[tableId]);
-  const rows=raw?JSON.parse(raw):[];
-  tbody.innerHTML="";
-  rows.forEach(obj=>{
-    const tr=document.createElement("tr");
-    tr.appendChild(buildCell("tx",{text:obj.tx||""}));
-    tr.appendChild(buildCell("stone",{text:obj.stone||""}));
-    tr.appendChild(buildCell("status",{text:obj.status||""}));
-    tr.appendChild(buildCell("date",{text:obj.date||""}));
-    tr.appendChild(buildCell("party",{text:obj.party||""}));
-    tr.appendChild(buildCell("deet",{text:obj.deet||""}));
-    tr.appendChild(buildCell("lot",{text:obj.lot||""}));
-
-    if(isAJ){
-      tr.appendChild(buildCell("lotno",{text:obj.lotno||""}));
-      tr.appendChild(buildCell("desc",{editable:true, text:obj.desc||"", mono:true}));
-      tr.appendChild(buildCell("shape",{editable:true, text:obj.shape||"", mono:true, plus:"shape"}));
-      tr.appendChild(buildCell("pcs",{editable:true, text:obj.pcs||"", mono:true}));
-      tr.appendChild(buildCell("cts",{editable:true, text:obj.cts||"", mono:true}));
-      tr.appendChild(buildCell("price",{editable:true, text:obj.price||"", mono:true}));
-      tr.appendChild(buildCell("amount",{text:obj.amount||"", mono:true}));
-      tr.appendChild(buildCell("remark",{editable:true, text:obj.remark||""}));
-    }else{
-      tr.appendChild(buildCell("grade",{editable:true, text:obj.grade||"", mono:true}));
-      tr.appendChild(buildCell("desc",{editable:true, text:obj.desc||"", mono:true}));
-      tr.appendChild(buildCell("shape",{editable:true, text:obj.shape||"", mono:true, plus:"shape"}));
-      tr.appendChild(buildCell("size",{editable:true, text:obj.size||"", mono:true, plus:"size"}));
-      tr.appendChild(buildCell("cts",{editable:true, text:obj.cts||"", mono:true}));
-      tr.appendChild(buildCell("price",{editable:true, text:obj.price||"", mono:true}));
-      tr.appendChild(buildCell("amount",{text:obj.amount||"", mono:true}));
-      tr.appendChild(buildCell("remarks",{editable:true, text:obj.remarks||"", mono:true}));
-      tr.appendChild(buildCell("ajmzlinks",{editable:true, text:obj.ajmzlinks||"", mono:true, plus:"ajmz"}));
-    }
-
-    tbody.appendChild(tr);
-    computeAmountRow(tr);
-  });
-  attachGridBehavior(table);
-  updateTotals(tableId);
-}
-
-/* ========= Excel-like navigation ========= */
-function attachGridBehavior(table){
-  const rows=[...table.querySelectorAll("tbody tr")];
-  rows.forEach((tr,rIdx)=>{
-    const cells=[...tr.querySelectorAll('.cell[contenteditable]')];
-    cells.forEach((span,cIdx)=>{ span.dataset.r=rIdx; span.dataset.c=cIdx; span.setAttribute('tabindex','0'); });
-  });
-
-  table.onkeydown = (e)=>{
-    const span = e.target.closest('.cell[contenteditable]');
-    if(!span) return;
-    const r = +span.dataset.r, c=+span.dataset.c;
-    const find = (rr,cc)=>{
-      const trs=[...table.querySelectorAll("tbody tr")];
-      if(rr<0||cc<0) return null;
-      const row=trs[rr]; if(!row) return null;
-      const ed=[...row.querySelectorAll('.cell[contenteditable]')];
-      if(ed[cc]) return ed[cc];
-      if(cc<0){ const prev=trs[rr-1]; if(!prev) return null; const p=[...prev.querySelectorAll('.cell[contenteditable]')]; return p[p.length-1]||null; }
-      const next=trs[rr+1]; if(!next) return null; const n=[...next.querySelectorAll('.cell[contenteditable]')]; return n[0]||null;
-    };
-    let t=null;
-    if(e.key==="ArrowRight"){ e.preventDefault(); t=find(r,c+1); }
-    else if(e.key==="ArrowLeft"){ e.preventDefault(); t=find(r,c-1); }
-    else if(e.key==="ArrowDown"){ e.preventDefault(); t=find(r+1,c); }
-    else if(e.key==="ArrowUp"){ e.preventDefault(); t=find(r-1,c); }
-    if(t){
-      const rng=document.createRange(); const sel=window.getSelection();
-      rng.selectNodeContents(t); rng.collapse(false); sel.removeAllRanges(); sel.addRange(rng); t.focus();
-    }
-  };
-
-  table.oninput = (e)=>{
-    const tr = e.target.closest("tr");
-    if(tr){ computeAmountRow(tr); }
-    if(table.id==="tblAJMZ") saveTable("AJMZ"); else saveTable("CAL");
-  };
-
-  table.onclick = (e)=>{
-    const btn = e.target.closest(".plus-trigger");
-    if(!btn) return;
-    const td = btn.closest("td");
-    showPickerFor(td, btn.dataset.plus);
-  };
-}
-
-/* ========= Toast ========= */
-const toast = document.getElementById("toast");
-function showToast(msg="✅ Submitted successfully!"){
-  toast.textContent = msg;
-  toast.style.display="block";
-  setTimeout(()=>{ toast.style.display="none"; }, 3000);
-}
-
-/* ========= Saved Lists (Modal) ========= */
-const STORAGE = { SHAPES:'saved_shapes', SIZES:'saved_sizes', LINKS:'saved_links' };
-const btnSettings = document.getElementById("btnSettings");
-const listsModal = document.getElementById("listsModal");
-const btnCloseLists = document.getElementById("btnCloseLists");
-const tabButtons = [...document.querySelectorAll(".tabbar .tab")];
-const panes = [...document.querySelectorAll(".tabpane")];
-
-btnSettings.addEventListener("click",()=>{ listsModal.style.display="flex"; refreshListsUI(); });
-btnCloseLists.addEventListener("click",()=>{ listsModal.style.display="none"; });
-listsModal.addEventListener("click",(e)=>{ if(e.target===listsModal) listsModal.style.display="none"; });
-
-tabButtons.forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    tabButtons.forEach(b=>b.classList.remove("active"));
-    panes.forEach(p=>p.classList.add("hidden"));
-    btn.classList.add("active");
-    document.querySelector(`.tabpane[data-name="${btn.dataset.tab}"]`).classList.remove("hidden");
-  });
-});
-
-function getSavedList(kind){
-  const key = kind==="shape"? STORAGE.SHAPES : kind==="size"? STORAGE.SIZES : STORAGE.LINKS;
-  return JSON.parse(localStorage.getItem(key)||"[]");
-}
-function setSavedList(kind, arr){
-  const key = kind==="shape"? STORAGE.SHAPES : kind==="size"? STORAGE.SIZES : STORAGE.LINKS;
-  const clean=[...new Set(arr.map(s=>s.trim()).filter(Boolean))];
-  localStorage.setItem(key, JSON.stringify(clean));
-  if(kind==="ajmz") refreshLeftPanelLinks();
-}
-
-function refreshListsUI(){
-  renderListUI('shapes', STORAGE.SHAPES, 'listShapes');
-  renderListUI('sizes', STORAGE.SIZES, 'listSizes');
-  renderListUI('links', STORAGE.LINKS, 'listLinks');
-}
-function renderListUI(kind, key, containerId){
-  const box=document.getElementById(containerId);
-  const vals=JSON.parse(localStorage.getItem(key)||"[]");
-  box.innerHTML = vals.length? "" : `<p class="note">No ${kind} saved yet.</p>`;
-  vals.forEach((v,i)=>{
-    const div=document.createElement("div"); div.className="item";
-    div.innerHTML = `<span class="name">${v}</span><button class="del" data-key="${key}" data-index="${i}">Delete</button>`;
-    box.appendChild(div);
-  });
-}
-document.addEventListener("click",(e)=>{
-  const del=e.target.closest(".del"); if(!del) return;
-  const key=del.dataset.key, idx=+del.dataset.index;
-  const arr=JSON.parse(localStorage.getItem(key)||"[]");
-  arr.splice(idx,1);
-  localStorage.setItem(key, JSON.stringify(arr));
-  refreshListsUI();
-});
-
-/* Adders */
-document.getElementById("btnAddShape").addEventListener("click",()=>{
-  const v=document.getElementById("inShape").value.trim(); if(!v) return;
-  const list=getSavedList("shape"); list.push(v); setSavedList("shape",list);
-  document.getElementById("inShape").value=""; refreshListsUI();
-});
-document.getElementById("btnAddSize").addEventListener("click",()=>{
-  const v=document.getElementById("inSize").value.trim(); if(!v) return;
-  const list=getSavedList("size"); list.push(v); setSavedList("size",list);
-  document.getElementById("inSize").value=""; refreshListsUI();
-});
-document.getElementById("btnAddLink").addEventListener("click",()=>{
-  const v=document.getElementById("inLink").value.trim(); if(!v) return;
-  const list=getSavedList("ajmz"); list.push(v); setSavedList("ajmz",list);
-  document.getElementById("inLink").value=""; refreshListsUI();
-});
-
-/* Left panel AJMZ links select sync */
-function refreshLeftPanelLinks(){
-  const list=getSavedList("ajmz");
-  const sel=document.getElementById("ajmzLink");
-  const current=[...sel.options].map(o=>o.value);
-  if(JSON.stringify(list)!==JSON.stringify(current)){
-    sel.innerHTML="";
-    list.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
-  }
-}
-
-/* Double-click to populate Lot from AJMZ Link list */
-document.getElementById("ajmzLink").addEventListener("dblclick", (e)=>{
-  if(e.target.tagName === "OPTION"){
-    document.getElementById("calLot").value = e.target.value;
-  }
-});
-
-/* ========= + Picker ========= */
-const picker = document.getElementById("valuePicker");
-const pickerTitle = document.getElementById("pickerTitle");
-const pickerOptions = document.getElementById("pickerOptions");
-const pickerCancel = document.getElementById("pickerCancel");
-const pickerApply = document.getElementById("pickerApply");
-let pickerContext = { td:null, type:null };
-
-function showPickerFor(td, type){
-  pickerContext={ td, type };
-  const rect=td.getBoundingClientRect();
-  picker.style.left = Math.min(rect.left + window.scrollX + 10, window.innerWidth - 300) + "px";
-  picker.style.top  = (rect.top + window.scrollY + rect.height + 6) + "px";
-  pickerTitle.textContent = "Add " + (type==="ajmz" ? "AJMZ Links" : (type==="size" ? "Sizes" : "Shapes"));
-  const list = type==="ajmz"? getSavedList("ajmz") : type==="size"? getSavedList("size") : getSavedList("shape");
-  renderPickerOptions(list);
-  picker.style.display="block";
-}
-function renderPickerOptions(list){
-  pickerOptions.innerHTML="";
-  if(!list.length){
-    const p=document.createElement("p"); p.className="note"; p.textContent="No saved values yet. Click ⚙️ Saved Lists to add.";
-    pickerOptions.appendChild(p); return;
-  }
-  list.forEach(v=>{
-    const id="opt_"+Math.random().toString(36).slice(2);
-    const label=document.createElement("label");
-    label.innerHTML = `<input type="checkbox" id="${id}" value="${v}"><span>${v}</span>`;
-    pickerOptions.appendChild(label);
-  });
-}
-pickerCancel.addEventListener("click",()=>{ picker.style.display="none"; });
-pickerApply.addEventListener("click",()=>{
-  if(!pickerContext.td) return;
-  const checked=[...pickerOptions.querySelectorAll('input[type="checkbox"]:checked')].map(i=>i.value);
-  const span=pickerContext.td.querySelector(".cell");
-  const merged=listToText([ ...textToList(span.textContent), ...checked ]);
-  span.textContent=merged;
-  picker.style.display="none";
-  const tbl = pickerContext.td.closest("table");
-  if(tbl.id==="tblAJMZ") saveTable("AJMZ"); else saveTable("CAL");
-});
-document.addEventListener("click",(e)=>{
-  if(picker.style.display==="block"){
-    if(!picker.contains(e.target) && !e.target.closest(".plus-trigger")){
-      picker.style.display="none";
-    }
-  }
-});
-
-/* ========= Firebase: submit rows & assign counter AFTER submit ========= */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-
+<script>
+/* ============================================================
+   FIREBASE CONFIG (moved to top for early initialization)
+   ============================================================ */
 const firebaseConfig = {
-  apiKey: "AIzaSyDkgQ5BCl8LySoiq5CC-HOWJddnJQQa3jQ",
-  authDomain: "poojainventory-ab7fa.firebaseapp.com",
-  databaseURL: "https://poojainventory-ab7fa-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "poojainventory-ab7fa",
-  storageBucket: "poojainventory-ab7fa.firebasestorage.app",
-  messagingSenderId: "804100194953",
-  appId: "1:804100194953:web:0af84ea1d53c3dde26bc58"
+  apiKey: "AIzaSyC72tFu_MdXf4eq4PMI-rtd4PpMfpLNZpM",
+  authDomain: "ajmzinventory.firebaseapp.com",
+  projectId: "ajmzinventory",
+  storageBucket: "ajmzinventory.firebasestorage.app",
+  messagingSenderId: "1069845316242",
+  appId: "1:1069845316242:web:c55be9de3724734f88dc4b",
+  databaseURL: "https://ajmzinventory-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
 
-function formatTx(n){ return "ADD-"+String(n).padStart(5,"0"); }
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database(app);
 
-async function reserveNextTransactionNumber(){
-  const counterRef = ref(db,"/counters/stoneAdd");
-  const snap = await get(counterRef);
-  const current = snap.exists()? (parseInt(snap.val(),10) || 0) : 0;
+/* ============================================================
+   LOCALSTORAGE KEYS
+   ============================================================ */
+const LS = {
+  rows: "sell_rows_v10_modal_chooser",
+  saved: "sell_saved_lists_v4",
+  mode: "sell_mode_v4"
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const read = (k, f) => {
+  try {
+    const r = localStorage.getItem(k);
+    return r ? JSON.parse(r) : (f ?? null);
+  } catch {
+    return f ?? null;
+  }
+};
+const write = (k, v) => {
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch {}
+};
+const uid = () => ("id_" + Math.random().toString(36).slice(2) + Date.now().toString(36));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+/* ============================================================
+   GLOBAL STATE - NOW WITH EMPTY DEFAULTS
+   ============================================================ */
+let ROWS = read(LS.rows, []);
+let SAVED = read(LS.saved, {
+  lotNames: [],
+  shapes: [],
+  sizes: []
+});
+let MODE = read(LS.mode, "AJMZ");
+
+/* ============================================================
+   FIREBASE SYNC FOR SAVED LISTS
+   ============================================================ */
+async function loadSavedListsFromFirebase() {
+  try {
+    const snapshot = await db.ref("savedLists").once("value");
+    if (snapshot.exists()) {
+      const firebaseData = snapshot.val();
+      SAVED = {
+        lotNames: firebaseData.lotNames || [],
+        shapes: firebaseData.shapes || [],
+        sizes: firebaseData.sizes || []
+      };
+      write(LS.saved, SAVED);
+      console.log("✅ Loaded saved lists from Firebase");
+    } else {
+      console.log("ℹ️ No saved lists in Firebase, using empty defaults");
+    }
+  } catch (error) {
+    console.error("❌ Error loading saved lists from Firebase:", error);
+  }
+}
+
+async function saveSavedListsToFirebase() {
+  try {
+    await db.ref("savedLists").set(SAVED);
+    console.log("✅ Saved lists synced to Firebase");
+  } catch (error) {
+    console.error("❌ Error saving lists to Firebase:", error);
+  }
+}
+
+/* ============================================================
+   CHOOSER MODAL (centered)
+   ============================================================ */
+const chooserBackdrop = document.getElementById("chooserBackdrop");
+const chooserContainer = document.getElementById("chooserContainer");
+const chooserTitle = document.getElementById("chooserTitle");
+const chooserApply = document.getElementById("chooserApply");
+const chooserClose = document.getElementById("chooserClose");
+
+let chooserCtx = null; // { rowId, field, type: "multi", options:[], current:[] }
+
+function openChooser({title, type, options, current, rowId, field}){
+  chooserCtx = { rowId, field, type, options, current };
+  chooserTitle.textContent = title || "Choose";
+  chooserContainer.innerHTML = "";
+
+  // only multi is used now (shape + size)
+  const wrap = document.createElement("div");
+  wrap.className = "grid-2";
+  options.forEach(opt => {
+    const id = "chk_" + Math.random().toString(36).slice(2);
+    const div = document.createElement("label");
+    div.className = "choice";
+    const checked = Array.isArray(current) && current.includes(opt);
+    div.innerHTML = `
+      <input type="checkbox" id="${id}" value="${esc(opt)}" ${checked ? "checked":""}/>
+      <label for="${id}">${esc(opt)}</label>
+    `;
+    wrap.appendChild(div);
+  });
+  chooserContainer.appendChild(wrap);
+
+  chooserBackdrop.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+function closeChooser(){
+  chooserBackdrop.style.display = "none";
+  chooserContainer.innerHTML = "";
+  chooserCtx = null;
+  document.body.style.overflow = "";
+}
+chooserClose.onclick = closeChooser;
+chooserBackdrop.addEventListener("mousedown",(e)=>{ if(e.target === chooserBackdrop) closeChooser(); });
+document.addEventListener("keydown",(e)=>{ if (e.key === "Escape" && chooserBackdrop.style.display === "flex") closeChooser(); });
+
+chooserApply.onclick = () => {
+  if (!chooserCtx) return;
+  const { rowId, field } = chooserCtx;
+  const row = ROWS.find(r=>r.id===rowId); if (!row) return;
+
+  const selected = Array.from(
+    chooserContainer.querySelectorAll('input[type="checkbox"]:checked')
+  ).map(x=>x.value);
+
+  row[field] = selected; // array of values
+  updateCellText(rowId, field, selected.join(", "));
+  persist();
+  closeChooser();
+};
+
+/* ============================================================
+   POPULATE FORM DROPDOWNS
+   ============================================================ */
+function populateDropdowns() {
+  fillSelect("#ajmz_lotName", SAVED.lotNames);
+  fillSelect("#ajmz_shape", SAVED.shapes);
+
+  fillSelect("#cal_lotName", SAVED.lotNames);
+  fillSelect("#cal_shape", SAVED.shapes);
+  fillSelect("#cal_size", SAVED.sizes);
+}
+function fillSelect(sel, items) {
+  const el = document.querySelector(sel);
+  el.innerHTML = "";
+  const def = document.createElement("option");
+  def.value = ""; def.textContent = "-- Select --";
+  el.appendChild(def);
+  items.forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item; opt.textContent = item;
+    el.appendChild(opt);
+  });
+}
+
+/* ============================================================
+   MODE SWITCHER
+   ============================================================ */
+document.querySelectorAll(".gtab").forEach(btn => { btn.onclick = () => setMode(btn.dataset.mode); });
+function setMode(m) {
+  MODE = m; write(LS.mode, m);
+  document.querySelectorAll(".gtab").forEach(btn => btn.classList.toggle("active", btn.dataset.mode === m));
+  document.getElementById("formbarAJMZ").style.display = (m === "AJMZ") ? "block" : "none";
+  document.getElementById("formbarCALIB").style.display = (m === "CALIB") ? "block" : "none";
+  document.getElementById("tableAreaAJMZ").style.display = (m === "AJMZ") ? "block" : "none";
+  document.getElementById("tableAreaCALIB").style.display = (m === "CALIB") ? "block" : "none";
+}
+
+/* ============================================================
+   SERIES HELPERS
+   ============================================================ */
+function lotSeries(base, count) {
+  if (!base) return Array(count).fill("");
+  const s = String(base).trim();
+  let idx = s.lastIndexOf("/"); if (idx === -1) idx = s.lastIndexOf("-");
+  let prefix = "", num = "";
+  if (idx > -1) { prefix = s.slice(0, idx + 1); num = s.slice(idx + 1); }
+  else {
+    const m = s.match(/(\d+)$/);
+    if (m) { prefix = s.slice(0, m.index); num = m[1]; }
+    else return Array(count).fill(s);
+  }
+  if (!/^\d+$/.test(num)) return Array(count).fill(s);
+  const width = num.length; const start = parseInt(num, 10);
+  const out=[]; for (let i=1;i<=count;i++) out.push(prefix + String(start + i).padStart(width,"0"));
+  return out;
+}
+function gradeSeries(base, count) {
+  const b=(base||"").trim(); if(!b) return Array(count).fill("");
+  const match=b.match(/#(\d+)/); if(!match) return Array(count).fill(b);
+  let start=parseInt(match[1],10);
+  const out=[]; for(let i=0;i<count;i++) out.push(`#${start+i}`);
+  return out;
+}
+
+/* ============================================================
+   GENERATE ROWS (AJMZ)
+   ============================================================ */
+document.getElementById("ajmz_generate").onclick = () => {
+  const data = {
+    date: val("#ajmz_date"),
+    party: val("#ajmz_party"),
+    deet: val("#ajmz_deet"),
+    lotName: val("#ajmz_lotName"),
+    lotFormat: val("#ajmz_lotFormat"),
+    desc: val("#ajmz_desc"),
+    shape: val("#ajmz_shape"),
+    rows: Math.max(1, +val("#ajmz_rows") || 1)
+  };
+  const series = lotSeries(data.lotFormat, data.rows);
+
+  for (let i = 0; i < data.rows; i++) {
+    ROWS.push({
+      id: uid(),
+      type: "AJMZ",
+      stone: "AJMZ",
+      txId: "", // set on submit
+      date: data.date,
+      party: data.party,
+      deet: data.deet,
+      lotName: data.lotName,
+      lotFormat: series[i] || data.lotFormat || "",
+      description: data.desc,
+      shape: normalizeMulti(data.shape),
+      cts: "", pcs: "", price: "", amount: "", remarks: ""
+    });
+  }
+  persist(); renderTables(); setMode("AJMZ");
+};
+
+/* ============================================================
+   GENERATE ROWS (CALIB)
+   ============================================================ */
+document.getElementById("cal_generate").onclick = () => {
+  const data = {
+    date: val("#cal_date"),
+    party: val("#cal_party"),
+    deet: val("#cal_deet"),
+    lotName: val("#cal_lotName"),
+    grade: val("#cal_grade"),
+    desc: val("#cal_desc"),
+    shape: val("#cal_shape"),
+    size: val("#cal_size"),
+    rows: Math.max(1, +val("#cal_rows") || 1)
+  };
+  const gseries = gradeSeries(data.grade, data.rows);
+
+  for (let i = 0; i < data.rows; i++) {
+    ROWS.push({
+      id: uid(),
+      type: "CALIB",
+      stone: "Calibrate",
+      txId: "",
+      date: data.date,
+      party: data.party,
+      deet: data.deet,
+      lotName: data.lotName,
+      grade: gseries[i] || data.grade || "",
+      description: data.desc,
+      shape: normalizeMulti(data.shape),
+      size: normalizeMulti(data.size),
+      cts: "", price: "", amount: "", remarks: ""
+    });
+  }
+  persist(); renderTables(); setMode("CALIB");
+};
+
+/* ============================================================
+   RENDER TABLES
+   ============================================================ */
+function renderTables() {
+  const aj = ROWS.filter(r => r.type === "AJMZ");
+  const ca = ROWS.filter(r => r.type === "CALIB");
+  renderAJMZ(aj); renderCAL(ca);
+  document.getElementById("ajmzCount").textContent = `${aj.length} row(s)`;
+  document.getElementById("calCount").textContent = `${ca.length} row(s)`;
+}
+
+function renderAJMZ(list) {
+  const tb = document.getElementById("tbodyAJMZ");
+  tb.innerHTML = "";
+  list.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.dataset.id = r.id;
+    tr.innerHTML = ajRowHTML(r);
+    tb.appendChild(tr);
+  });
+}
+
+function renderCAL(list) {
+  const tb = document.getElementById("tbodyCAL");
+  tb.innerHTML = "";
+  list.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.dataset.id = r.id;
+    tr.innerHTML = calRowHTML(r);
+    tb.appendChild(tr);
+  });
+}
+
+/* ============================================================
+   ROW TEMPLATES
+   ============================================================ */
+function ajRowHTML(r) {
+  return `
+    ${td("txId", r.txId || "", true)}
+    ${td("stone", r.stone, true)}
+    ${td("date", r.date, false, "date")}
+    ${td("party", r.party)}
+    ${td("deet", r.deet)}
+    ${td("lotName", r.lotName)}
+    ${td("lotFormat", r.lotFormat)}
+    ${td("description", r.description)}
+    ${tdChooser("shape", normalizeMulti(r.shape).join(", "))}
+    ${td("cts", r.cts, false, "num")}
+    ${td("pcs", r.pcs, false, "num")}
+    ${td("price", r.price, false, "num")}
+    ${td("amount", r.amount, true, "num")}
+    ${td("remarks", r.remarks)}
+    <td class="td-actions"><button class="row-btn del" data-action="del">🗑</button></td>
+  `;
+}
+function calRowHTML(r) {
+  return `
+    ${td("txId", r.txId || "", true)}
+    ${td("stone", r.stone, true)}
+    ${td("date", r.date, false, "date")}
+    ${td("party", r.party)}
+    ${td("deet", r.deet)}
+    ${td("lotName", r.lotName)}
+    ${td("grade", r.grade)}
+    ${td("description", r.description)}
+    ${tdChooser("shape", normalizeMulti(r.shape).join(", "))}
+    ${tdChooser("size", normalizeMulti(r.size).join(", "))}
+    ${td("cts", r.cts, false, "num")}
+    ${td("price", r.price, false, "num")}
+    ${td("amount", r.amount, true, "num")}
+    ${td("remarks", r.remarks)}
+    <td class="td-actions"><button class="row-btn del" data-action="del">🗑</button></td>
+  `;
+}
+
+/* ============================================================
+   TABLE CELL TEMPLATES
+   ============================================================ */
+function td(field, value, readOnly = false, type = "text") {
+  return `
+    <td data-field="${field}">
+      <div class="cell ${readOnly ? "readonly" : ""}"
+           ${readOnly ? 'contenteditable="false"' : 'contenteditable="true"'}
+           data-type="${type}">
+        ${esc(value ?? "")}
+      </div>
+    </td>
+  `;
+}
+function tdChooser(field, value){
+  return `
+    <td data-field="${field}">
+      <div class="cell"
+           contenteditable="true"
+           data-chooser="${field}">
+        ${esc(value ?? "")}
+      </div>
+    </td>
+  `;
+}
+
+/* ============================================================
+   TABLE EVENTS: CLICK (delete) + DOUBLE-CLICK (chooser)
+   ============================================================ */
+document.getElementById("tableAJMZ").addEventListener("click", tableAction);
+document.getElementById("tableCAL").addEventListener("click", tableAction);
+
+function tableAction(e) {
+  const btn = e.target.closest("button");
+  if (btn && btn.dataset.action === "del") {
+    const tr = btn.closest("tr");
+    const id = tr.dataset.id;
+    ROWS = ROWS.filter(r => r.id !== id);
+    persist(); renderTables();
+  }
+}
+
+/* Double-click → open chooser for shape / size */
+["tableAJMZ", "tableCAL"].forEach(id => {
+  const table = document.getElementById(id);
+
+  table.addEventListener("dblclick", (e) => {
+    const cell = e.target.closest(".cell");
+    if (!cell) return;
+
+    const tdEl = cell.parentElement;
+    const field = tdEl.dataset.field;
+    if (field !== "shape" && field !== "size") return;
+
+    const tr = tdEl.closest("tr");
+    const rowId = tr.dataset.id;
+    const row = ROWS.find(r => r.id === rowId);
+    if (!row) return;
+
+    if (field === "shape") {
+      openChooser({
+        title: "Select Shapes",
+        type: "multi",
+        options: SAVED.shapes,
+        current: normalizeMulti(row.shape),
+        rowId,
+        field: "shape"
+      });
+    } else if (field === "size") {
+      openChooser({
+        title: "Select Sizes",
+        type: "multi",
+        options: SAVED.sizes,
+        current: normalizeMulti(row.size),
+        rowId,
+        field: "size"
+      });
+    }
+  });
+});
+
+/* SAVE ON BLUR for normal editable cells (incl. shape & size paste) */
+["tableAJMZ", "tableCAL"].forEach(id => {
+  const table = document.getElementById(id);
+  table.addEventListener("blur", commitEdit, true);
+  table.addEventListener("keydown", excelNav);
+});
+
+function commitEdit(e) {
+  const cell = e.target;
+  if (!cell.classList.contains("cell")) return;
+
+  const tdEl = cell.parentElement;
+  const tr = tdEl.parentElement;
+  const field = tdEl.dataset.field;
+  const id = tr.dataset.id;
+  const row = ROWS.find(x => x.id === id);
+  if (!row) return;
+
+  if (field === "stone" || field === "amount" || field === "txId") {
+    cell.textContent = (field === "size" || field === "shape")
+      ? normalizeMulti(row[field]).join(", ")
+      : (row[field] ?? "");
+    return;
+  }
+
+  // Shape or Size: treat as multivalue
+  if (field === "shape" || field === "size") {
+    const text = (cell.textContent || "").trim();
+    const arr = normalizeMulti(text);
+    row[field] = arr;
+    cell.textContent = arr.join(", ");
+    persist();
+    return;
+  }
+
+  let valText = cell.textContent.trim();
+  const type = cell.dataset.type;
+
+  if (type === "num") valText = numeric(valText);
+  if (type === "date") valText = toISO(valText);
+
+  row[field] = valText;
+
+  if (field === "cts" || field === "price") {
+    const c = toNumber(row.cts);
+    const p = toNumber(row.price);
+    row.amount = (isFinite(c) && isFinite(p)) ? formatAmount(c * p) : "";
+    const amountCell = tr.querySelector('td[data-field="amount"] .cell');
+    if (amountCell) amountCell.textContent = row.amount;
+  }
+
+  persist();
+}
+
+/* Utility: update a specific cell's visible text (after chooser Apply) */
+function updateCellText(rowId, field, text){
+  const row = ROWS.find(r => r.id === rowId);
+  if (!row) return;
+  const tableId = (row.type === "AJMZ") ? "tableAJMZ" : "tableCAL";
+  const cell = document.querySelector(
+    `#${tableId} tr[data-id="${rowId}"] td[data-field="${field}"] .cell`
+  );
+  if (cell) cell.textContent = text ?? "";
+}
+
+/* Keyboard nav */
+function excelNav(e) {
+  const c = e.target;
+  if (!c.classList.contains("cell")) return;
+
+  const tdEl = c.parentElement;
+  const tr = tdEl.parentElement;
+  const table = tr.closest("table");
+
+  const rows = Array.from(table.tBodies[0].rows);
+  const rIndex = rows.indexOf(tr);
+  const cIndex = Array.from(tr.cells).indexOf(tdEl);
+
+  const focusCell = (ri, ci) => {
+    const row = rows[ri]; if (!row) return;
+    const target = row.cells[ci]?.querySelector(".cell");
+    if (target) {
+      target.focus();
+      const range = document.createRange(); range.selectNodeContents(target);
+      range.collapse(false);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    }
+  };
+
+  const key = e.key, shift = e.shiftKey;
+  if (key === "Enter") { e.preventDefault(); focusCell(shift ? rIndex-1 : rIndex+1, cIndex); }
+  if (key === "Tab")   { e.preventDefault(); focusCell(rIndex, shift ? cIndex-1 : cIndex+1); }
+  if (key === "ArrowUp")   { e.preventDefault(); focusCell(rIndex-1, cIndex); }
+  if (key === "ArrowDown") { e.preventDefault(); focusCell(rIndex+1, cIndex); }
+  if (key === "ArrowLeft") { e.preventDefault(); focusCell(rIndex, cIndex-1); }
+  if (key === "ArrowRight"){ e.preventDefault(); focusCell(rIndex, cIndex+1); }
+}
+
+/* ============================================================
+   VALUE HELPERS
+   ============================================================ */
+function val(sel) {
+  return (document.querySelector(sel).value || "").trim();
+}
+function numeric(t) {
+  const s = t.replace(/[, ]/g, "").trim();
+  return /^\d*\.?\d*$/.test(s) ? s : "";
+}
+function toNumber(v) {
+  if (v == null || v === "") return NaN;
+  const n = parseFloat(String(v).replace(/,/g, ""));
+  return isFinite(n) ? n : NaN;
+}
+function formatAmount(n) {
+  return (Math.round(n * 10000) / 10000).toString();
+}
+function toISO(s) {
+  s = s.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    let [, d, mth, y] = m;
+    if (y.length === 2) y = "20" + y;
+    return `${y}-${mth.padStart(2,"0")}-${d.padStart(2,"0")}`;
+  }
+  return s;
+}
+
+/* Normalize multi (accepts "A, B" or array) -> array */
+function normalizeMulti(v) {
+  if (Array.isArray(v)) return v.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+  if (v == null) return [];
+  const s = String(v).trim();
+  if (!s) return [];
+  return s.split(",").map(x=>x.trim()).filter(Boolean);
+}
+
+/* Rerender one row if needed */
+function rerenderRow(rowId){
+  const r = ROWS.find(x => x.id === rowId);
+  if (!r) return;
+  const tableId = r.type === "AJMZ" ? "tableAJMZ" : "tableCAL";
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  const old = tbody.querySelector(`tr[data-id="${rowId}"]`);
+  if (!old) return;
+  const tr = document.createElement("tr");
+  tr.dataset.id = rowId;
+  tr.innerHTML = (r.type === "AJMZ") ? ajRowHTML(r) : calRowHTML(r);
+  tbody.replaceChild(tr, old);
+}
+
+/* ============================================================
+   SAVED LIST MODAL LOGIC (WITH FIREBASE SYNC)
+   ============================================================ */
+const savedModal = document.getElementById("savedModal");
+document.getElementById("openSavedListsBtn").onclick = () => {
+  renderSavedLists();
+  savedModal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+};
+document.getElementById("closeSavedBtn").onclick = closeSaved;
+function closeSaved(){
+  savedModal.style.display = "none";
+  document.body.style.overflow = "";
+  populateDropdowns();
+}
+
+// Save button now syncs to Firebase
+document.getElementById("saveSavedLists").onclick = async () => {
+  await saveSavedListsToFirebase();
+  persist();
+  closeSaved();
+};
+
+document.getElementById("lotNameAdd").onclick = () => addSaved("lotNames", "lotNameInput");
+document.getElementById("shapeAdd").onclick = () => addSaved("shapes", "shapeInput");
+document.getElementById("sizeAdd").onclick = () => addSaved("sizes", "sizeInput");
+
+function addSaved(key, id) {
+  const inp = document.getElementById(id);
+  const v = inp.value.trim();
+  if (!v) return;
+  if (!SAVED[key].includes(v)) SAVED[key].push(v);
+  inp.value = "";
+  renderSavedLists();
+}
+function renderSavedLists() {
+  makeChips("lotNameList", "lotNames");
+  makeChips("shapeList", "shapes");
+  makeChips("sizeList", "sizes");
+}
+function makeChips(container, key) {
+  const wrap = document.getElementById(container);
+  wrap.innerHTML = "";
+  SAVED[key].forEach((v, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<span>${esc(v)}</span><button data-k="${key}" data-i="${i}">×</button>`;
+    wrap.appendChild(div);
+  });
+  wrap.onclick = (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    const k = b.dataset.k;
+    const i = +b.dataset.i;
+    SAVED[k].splice(i, 1);
+    renderSavedLists();
+  };
+}
+
+/* ============================================================
+   CLEAR BUTTONS
+   ============================================================ */
+document.getElementById("clearRowsBtn").onclick = () => {
+  if (!confirm("Delete all generated rows?")) return;
+  ROWS = [];
+  persist();
+  renderTables();
+};
+
+document.getElementById("clearAllBtn").onclick = async () => {
+  if (!confirm("Delete ALL rows and saved lists (both local and Firebase)?")) return;
+  ROWS = [];
+  SAVED = { lotNames: [], shapes: [], sizes: [] };
+  persist();
+  await saveSavedListsToFirebase();
+  populateDropdowns();
+  renderTables();
+};
+
+/* ============================================================
+   PERSIST STATE
+   ============================================================ */
+function persist() {
+  write(LS.rows, ROWS);
+  write(LS.saved, SAVED);
+}
+
+/* ============================================================
+   TX COUNTER GENERATOR  (ADD-000001, ADD-000002, ...)
+   ============================================================ */
+async function getNextAddCounter() {
+  const counterRef = db.ref("counters/add");
+
+  const snapshot = await counterRef.once("value");
+  let current = snapshot.exists() ? snapshot.val() : 0;
+
   const next = current + 1;
-  await set(counterRef,next);
-  return next;
+
+  await counterRef.set(next);
+
+  return `ADD-${String(next).padStart(6, "0")}`;
 }
 
-function collectRows(tableId){
-  const table=document.getElementById(tableId==="AJMZ"?"tblAJMZ":"tblCAL");
-  const rows=[...table.querySelectorAll("tbody tr")];
-  return rows.map(tr=>rowToObject(tr,tableId));
+/* ============================================================
+   FIREBASE SUBMIT LOGIC (Permanent Save)
+   ============================================================ */
+document.getElementById("submitToFirebase").onclick = async () => {
+  if (!ROWS || ROWS.length === 0) {
+    alert("⚠️ No data to submit.");
+    return;
+  }
+
+  const ajRows = ROWS.filter(r => r.type === "AJMZ");
+  const calRows = ROWS.filter(r => r.type === "CALIB");
+
+  if (!confirm(
+    `Submit ${ROWS.length} records to Firebase?\n\n` +
+    `AJMZ: ${ajRows.length}\nCalibrate: ${calRows.length}`
+  )) return;
+
+  try {
+    const txId = await getNextAddCounter();
+
+    ajRows.forEach(r => { r.txId = txId; });
+    calRows.forEach(r => { r.txId = txId; });
+
+    const rootRef = db.ref();
+    const updates = {};
+
+    ajRows.forEach(row => {
+      const key = rootRef.child("ajmzRecords").push().key;
+      updates[`/ajmzRecords/${key}`] = row;
+    });
+
+    calRows.forEach(row => {
+      const key = rootRef.child("calibRecords").push().key;
+      updates[`/calibRecords/${key}`] = row;
+    });
+
+    await rootRef.update(updates);
+
+    alert(
+      `✅ Successfully submitted records to Firebase!\n\n` +
+      `TX ID: ${txId}\n\n` +
+      `AJMZ: ${ajRows.length}\nCalibrate: ${calRows.length}`
+    );
+
+    ROWS = [];
+    persist();
+    renderTables();
+  } catch (error) {
+    console.error("❌ Error submitting to Firebase:", error);
+    alert("❌ Failed to submit data. Check console for details.");
+  }
+};
+
+/* ============================================================
+   BOOT - WITH FIREBASE LOAD
+   ============================================================ */
+function migrateRowsIfNeeded(){
+  let changed = false;
+  ROWS.forEach(r=>{
+    if (r.shape !== undefined && !Array.isArray(r.shape)) {
+      r.shape = normalizeMulti(r.shape);
+      changed = true;
+    }
+    if (r.size !== undefined && !Array.isArray(r.size)) {
+      r.size = normalizeMulti(r.size);
+      changed = true;
+    }
+    if (typeof r.txId === "undefined") {
+      r.txId = "";
+      changed = true;
+    }
+  });
+  if (changed) persist();
 }
 
-/* Push all current rows to Firebase, assigning TX after reservation */
-async function submitToFirebase(tableId){
-  // correct upload targets
-  const path = tableId==="AJMZ" ? "/stoneamjz" : "/stonecalibrate";
-  const tableEl = document.getElementById(tableId==="AJMZ"?"tblAJMZ":"tblCAL");
-  const list = collectRows(tableId);
-  if(!list.length){ alert("No rows to submit."); return; }
-
-  const btn=document.getElementById("btnSubmit");
-  btn.disabled=true; btn.textContent="Submitting...";
-
-  try{
-    const reservedInt = await reserveNextTransactionNumber();
-    const tx = formatTx(reservedInt);
-
-    // reflect TX in UI immediately
-    const txCells = tableEl.querySelectorAll('tbody tr td[data-col="tx"] .cell');
-    txCells.forEach(cell=> cell.textContent = tx);
-
-    // upload
-    for(const rec of list){
-      rec.tx = tx;
-      const cts = sanitizeFloat(rec.cts||"0");
-      const price = sanitizeFloat(rec.price||"0");
-      rec.amount = (cts*price||0);
-      await set(push(ref(db, path)), rec);
-    }
-
-    // persist current (with TX), then clear UI & local
-    saveTable(tableId);
-
-    // CLEAR rows after submit
-    tableEl.querySelector("tbody").innerHTML = "";
-    localStorage.removeItem(STORAGE_KEYS[tableId]);
-    updateTotals(tableId);
-
-    // show last TX
-    document.getElementById("lastTxNo").textContent = tx;
-    document.getElementById("lastTxDisplay").style.display = "block";
-
-    // auto-switch back to AJMZ (Option 2)
-    if(targetSel.value!=="AJMZ"){
-      targetSel.value = "AJMZ";
-      targetSel.dispatchEvent(new Event("change"));
-    }
-
-    showToast("✅ Submitted successfully! Transaction No: " + tx);
-  }catch(err){
-    console.error(err);
-    alert("Submission failed: " + err.message);
-  }finally{
-    btn.disabled=false; btn.textContent="Submit record.";
-  }
+async function boot() {
+  migrateRowsIfNeeded();
+  
+  // Load saved lists from Firebase on startup
+  await loadSavedListsFromFirebase();
+  
+  populateDropdowns();
+  renderTables();
+  setMode(MODE);
 }
 
-/* ========= Generate / Clear / Toggle ========= */
-const targetSel=document.getElementById("targetTable");
-const stoneInput=document.getElementById("stone");
-
-targetSel.addEventListener("change",()=>{
-  const val=targetSel.value;
-  const aj=document.getElementById("secAJMZ");
-  const ca=document.getElementById("secCAL");
-  if(val==="AJMZ"){
-    aj.classList.remove("hidden"); ca.classList.add("hidden");
-    document.getElementById("calOnly").classList.add("hidden");
-    document.getElementById("ajmzLotFields").classList.remove("hidden");
-    stoneInput.value="AJMZ"; stoneInput.readOnly=true;
-  }else{
-    aj.classList.add("hidden"); ca.classList.remove("hidden");
-    document.getElementById("calOnly").classList.remove("hidden");
-    document.getElementById("ajmzLotFields").classList.add("hidden");
-    stoneInput.value="Calibrate"; stoneInput.readOnly=true;
-  }
-});
-
-document.getElementById("btnAJMZClear").addEventListener("click",()=>{
-  if(confirm("Clear all AJMZ rows?")){
-    document.querySelector("#tblAJMZ tbody").innerHTML="";
-    localStorage.removeItem(STORAGE_KEYS.AJMZ);
-    updateTotals("AJMZ");
-  }
-});
-document.getElementById("btnCALClear").addEventListener("click",()=>{
-  if(confirm("Clear all Calibrate rows?")){
-    document.querySelector("#tblCAL tbody").innerHTML="";
-    localStorage.removeItem(STORAGE_KEYS.CAL);
-    updateTotals("CAL");
-  }
-});
-
-/* Generate ADD Rows — Transaction No stays BLANK until submit */
-document.getElementById("btnGenerate").addEventListener("click", ()=>{
-  const target=targetSel.value;
-  const stone=stoneInput.value.trim();
-  const date=document.getElementById("date").value;
-  const party=document.getElementById("party").value.trim();
-  const deet=document.getElementById("deet").value.trim();
-  if(!stone){ alert("Please enter Stone name."); return; }
-
-  if(target==="AJMZ"){
-    const lotName=document.getElementById("lotName").value.trim()||"AJMZ 1";
-    const lotFmt=document.getElementById("lotFormat").value.replace(/[^0-9/]/g,"").trim()||"1";
-    const count=Math.max(1,parseInt(document.getElementById("lotCount").value||"1"));
-    const baseNum=numericBaseFromFormat(lotFmt);
-
-    const tbody=document.querySelector("#tblAJMZ tbody");
-    for(let seq=1; seq<=count; seq++){
-      const lotNo=lotNoFmt(baseNum,seq,count);
-      const tr=document.createElement("tr");
-
-      [["tx",""],["stone",stone],["status","ADD"],["date",date],["party",party],["deet",deet],
-       ["lot",lotName],["lotno",lotNo]].forEach(([k,v])=> tr.appendChild(buildCell(k,{text:v})));
-      tr.appendChild(buildCell("desc",{editable:true, mono:true}));
-      tr.appendChild(buildCell("shape",{editable:true, mono:true, plus:"shape"}));
-      tr.appendChild(buildCell("pcs",{editable:true, mono:true}));
-      tr.appendChild(buildCell("cts",{editable:true, mono:true}));
-      tr.appendChild(buildCell("price",{editable:true, mono:true}));
-      tr.appendChild(buildCell("amount",{text:"", mono:true}));
-      tr.appendChild(buildCell("remark",{editable:true}));
-
-      tbody.appendChild(tr);
-      computeAmountRow(tr);
-    }
-    attachGridBehavior(document.getElementById("tblAJMZ"));
-    saveTable("AJMZ");
-  }else{
-    const grade=document.getElementById("defGrade").value||"";
-    const size=document.getElementById("defSize").value||"";
-    const count=Math.max(1,parseInt(document.getElementById("calLotCount").value||"1"));
-    const calLot=document.getElementById("calLot").value.trim()||"";
-    const links=[...document.querySelectorAll("#ajmzLink option:checked")].map(o=>o.value).join(", ");
-
-    const tbody=document.querySelector("#tblCAL tbody");
-    for(let i=0;i<count;i++){
-      const tr=document.createElement("tr");
-
-      [["tx",""],["stone",stone],["status","ADD"],["date",date],["party",party],["deet",deet],["lot",calLot]].forEach(([k,v])=> tr.appendChild(buildCell(k,{text:v})));
-      tr.appendChild(buildCell("grade",{editable:true, text:grade, mono:true}));
-      tr.appendChild(buildCell("desc",{editable:true, mono:true}));
-      tr.appendChild(buildCell("shape",{editable:true, mono:true, plus:"shape"}));
-      tr.appendChild(buildCell("size",{editable:true, text:size, mono:true, plus:"size"}));
-      tr.appendChild(buildCell("cts",{editable:true, mono:true}));
-      tr.appendChild(buildCell("price",{editable:true, mono:true}));
-      tr.appendChild(buildCell("amount",{text:"", mono:true}));
-      tr.appendChild(buildCell("remarks",{editable:true}));
-      tr.appendChild(buildCell("ajmzlinks",{editable:true, text:links, mono:true, plus:"ajmz"}));
-
-      tbody.appendChild(tr);
-      computeAmountRow(tr);
-    }
-    attachGridBehavior(document.getElementById("tblCAL"));
-    saveTable("CAL");
-  }
-});
-
-/* ========= Boot ========= */
-function boot(){
-  if(!localStorage.getItem(STORAGE.SHAPES)) localStorage.setItem(STORAGE.SHAPES, JSON.stringify(["Round","Oval","Cushion","Pear","Marquise"]));
-  if(!localStorage.getItem(STORAGE.SIZES))  localStorage.setItem(STORAGE.SIZES, JSON.stringify(["2×2","3×5","4×6","5×7"]));
-  if(!localStorage.getItem(STORAGE.LINKS))  localStorage.setItem(STORAGE.LINKS, JSON.stringify(["AJMZ1","AJMZ2","AJMZ3","AJMZ4"]));
-  refreshLeftPanelLinks();
-
-  const targetSel=document.getElementById("targetTable");
-  const stoneInput=document.getElementById("stone");
-  if(targetSel.value==="AJMZ"){ stoneInput.value="AJMZ"; } else { stoneInput.value="Calibrate"; }
-  stoneInput.readOnly=true;
-
-  document.getElementById("date").value=new Date().toISOString().slice(0,10);
-
-  repaintTable("AJMZ");
-  repaintTable("CAL");
-}
 boot();
-
-window.addEventListener("load",()=>{
-  refreshLeftPanelLinks();
-  updateTotals("AJMZ");
-  updateTotals("CAL");
-});
-
-// Submit button logic
-document.getElementById("btnSubmit").addEventListener("click", () => {
-  const target = document.getElementById("targetTable").value;
-  submitToFirebase(target === "AJMZ" ? "AJMZ" : "CAL");
-});
-
 </script>
 </body>
 </html>
+
