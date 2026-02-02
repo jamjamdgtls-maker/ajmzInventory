@@ -1,0 +1,3469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>REPORTS (2)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --bg:#F5F5F0;
+  --card:#ffffff;
+  --line:#d6cbb8;
+  --ink:#2f3b33;
+  --ink-soft:#6b7a70;
+  --accent:#5D866C;
+  --accent-2:#C2A68C;
+  --shadow:rgba(0,0,0,0.08);
+}
+
+/* ---------- layout ---------- */
+.nav-vertical{
+  width:60px;
+  background:#fff;
+  border-right:3px solid var(--accent-2);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  padding:14px 0;
+  box-shadow:6px 0 20px var(--shadow);
+  position:fixed;
+  left:0; top:0; bottom:0;
+  z-index:2000;
+}
+.nav-item{
+  width:44px; height:44px;
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+  text-decoration:none;
+  color:var(--ink);
+  background:#fff;
+  border:1px solid var(--line);
+  cursor:pointer;
+  font-weight:600;
+  transition:.15s;
+}
+.nav-item:hover{background:#faf8f0}
+.nav-item.active{
+  background:var(--accent);
+  color:#fff;
+  border-color:transparent;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:Inter, sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  overflow:hidden;
+}
+
+.workspace{
+  margin-left:60px;
+  height:100vh;
+  padding:5px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.panel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:8px;
+  box-shadow:0 4px 12px var(--shadow);
+  padding:8px 12px;
+  margin:5px 5px 4px 5px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-shrink:0;
+}
+.page-title{
+  font-size:18px;
+  font-weight:700;
+}
+.spacer{flex:1}
+.search-box{
+  position:relative;
+  min-width:280px;
+}
+.search-box input{
+  width:100%;
+  padding:6px 10px 6px 30px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  font-size:13px;
+}
+.search-icon{
+  position:absolute;
+  left:10px;
+  top:7px;
+  font-size:14px;
+}
+
+.tab-row{
+  display:flex;
+  gap:6px;
+  margin:5px;
+  flex-shrink:0;
+}
+.tab-btn{
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:12px;
+  font-weight:600;
+  color:var(--ink-soft);
+  cursor:pointer;
+  transition:.15s;
+}
+.tab-btn:hover{background:#faf8f0}
+.tab-btn.active{
+  background:var(--accent);
+  color:#fff;
+  border-color:transparent;
+}
+
+.tab-section{display:none;}
+.tab-section.active{display:block;}
+
+.toolbar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  padding:8px 12px;
+  flex-wrap:wrap;
+  flex-shrink:0;
+  background:#fff;
+  border-bottom:5px solid var(--line);
+}
+.filter-group{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.filter-label{
+  font-size:11px;
+  color:var(--ink-soft);
+  font-weight:600;
+}
+.filter-select{
+  min-width:120px;
+  height:32px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  padding:4px 8px;
+  font-size:12px;
+  background:#fff;
+}
+
+/* Multi-select dropdown */
+.searchable-select-wrapper{
+  position:relative;
+  min-width:140px;
+}
+.searchable-select-input{
+  width:100%;
+  height:32px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  padding:4px 24px 4px 8px;
+  font-size:11px;
+  background:#fff;
+  cursor:pointer;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.searchable-select-input.has-selection{
+  background:#f0f8f0;
+  border-color:var(--accent);
+  font-weight:600;
+  color:var(--accent);
+}
+.searchable-select-dropdown{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  max-height:220px;
+  overflow-y:auto;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:7px;
+  margin-top:2px;
+  box-shadow:0 4px 12px var(--shadow);
+  z-index:1000;
+  display:none;
+}
+.searchable-select-dropdown.active{
+  display:block;
+}
+.searchable-select-search{
+  position:sticky;
+  top:0;
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  padding:6px 8px;
+  z-index:10;
+}
+.searchable-select-search input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:5px;
+  padding:4px 6px;
+  font-size:11px;
+  outline:none;
+}
+.searchable-select-search input:focus{
+  border-color:var(--accent);
+}
+.searchable-select-option{
+  padding:6px 10px;
+  font-size:12px;
+  cursor:pointer;
+  border-bottom:1px solid #f0f0f0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.searchable-select-option:last-child{
+  border-bottom:none;
+}
+.searchable-select-option:hover{
+  background:#f5f5f0;
+}
+.searchable-select-option.all-option{
+  background:#fafafa;
+  font-weight:600;
+  border-bottom:2px solid var(--line);
+}
+.searchable-select-option.all-option:hover{
+  background:#f0f0f0;
+}
+.searchable-select-option.hidden{
+  display:none;
+}
+.searchable-select-option input[type="checkbox"]{
+  cursor:pointer;
+  width:14px;
+  height:14px;
+  accent-color:var(--accent);
+}
+.searchable-select-option label{
+  cursor:pointer;
+  flex:1;
+  user-select:none;
+}
+
+.button{
+  height:32px;
+  padding:0 14px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.15s;
+}
+.button:hover{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+
+.checkbox-toggle{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 8px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:12px;
+  cursor:pointer;
+  user-select:none;
+}
+.checkbox-toggle input[type="checkbox"]{
+  cursor:pointer;
+}
+.checkbox-toggle:hover{
+  background:#faf8f0;
+}
+
+.card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:0 8px 22px var(--shadow);
+  overflow:hidden;
+}
+
+/* wrapper that includes the top synced scrollbar and the table */
+.table-wrapper{
+  overflow:auto;
+  overflow-y:auto;
+  max-height:calc(100vh - 245px);
+  border-top:1px solid var(--line);
+  position:relative;
+}
+
+/* top mirrored horizontal scrollbar container */
+.table-wrapper .h-scroll {
+  height:16px;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.table-wrapper .h-scroll .h-inner{
+  height:1px;
+}
+
+/* main table */
+.ledger-table{
+  background:#fff;
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+.ledger-table thead{
+  position:sticky;
+  top:0;
+  z-index:200;
+}
+.ledger-table thead th{
+  padding:10px 8px;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.03em;
+  color:var(--ink-soft);
+  background:#f3efe6;
+  border-bottom:1px solid var(--line);
+}
+
+/* column section styling */
+.section-header{background:#e5dfd1;text-align:center;font-size:10px;border-left:2px solid var(--line);}
+.total-section{background:#bdd7ee;color:#1f4788;}
+.sold-section{background:#f4c7c3;color:#8b1a1a;}
+.balance-section{background:#fff2cc;color:#7f6000;}
+
+.total-col{background:#e7f0f7;}
+.sold-col{background:#fce9e8;}
+.balance-col{background:#fffaeb;}
+
+.section-col{border-left:2px solid var(--line);}
+
+/* body cells */
+.ledger-table tbody td{
+  padding:8px;
+  border-bottom:1px solid #f0ebe3;
+}
+.ledger-table tbody tr:hover{
+  background:#fafaf8;
+}
+.num-cell{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Totals row styling - sticky below header */
+.totals-row{
+  background:#d4edda !important;
+  font-weight:700;
+  font-size:13px;
+  border-top:3px solid var(--accent) !important;
+  border-bottom:3px solid var(--accent) !important;
+  z-index:190;
+}
+.totals-row td{
+  padding:10px 8px !important;
+  background:#d4edda !important;
+  position:sticky;
+  /* top is set dynamically via JS to match header height */
+}
+.totals-row:hover td{
+  background:#c3e6cb !important;
+}
+
+/* Parent / Child row styling */
+.parent-row{
+  background:#d4edda !important;
+  font-weight:700;
+}
+.parent-row:hover{
+  background:#c3e6cb !important;
+}
+.child-row{
+  background:#f8d7da !important;
+}
+.child-row:hover{
+  background:#f5c6cb !important;
+}
+.child-row td:first-child{
+  padding-left:30px;
+}
+.child-row td:first-child::before{
+  content:"↳ ";
+  color:#999;
+  margin-right:5px;
+}
+
+/* Summary row styling (from summary UI) */
+.summary-row{
+  background:#e8f4fc !important;
+  font-weight:600;
+  font-size:13px;
+}
+.summary-row:hover{
+  background:#d4edfc !important;
+}
+.summary-group-header{
+  background:#c8e4f8 !important;
+  font-weight:700;
+  font-size:14px;
+  border-top:2px solid var(--accent);
+  border-bottom:2px solid var(--accent);
+}
+
+/* Collapsible section toggles */
+.section-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+  padding:2px 6px;
+  border-radius:4px;
+  transition:.2s;
+}
+.section-toggle:hover{background:rgba(93,134,108,0.1);}
+.section-toggle-icon{
+  display:inline-block;
+  transition:transform 0.2s;
+  width:16px;
+  height:16px;
+  border:1px solid var(--ink-soft);
+  border-radius:2px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:bold;
+}
+.section-toggle-icon.collapsed::before{
+  content:">";
+}
+.section-toggle-icon:not(.collapsed)::before{
+  content:"∨";
+}
+
+/* Hide columns when section is collapsed */
+.ledger-table.section-hidden-total .total-col,
+.ledger-table.section-hidden-total .total-section{
+  display:none !important;
+}
+.ledger-table.section-hidden-sold .sold-col,
+.ledger-table.section-hidden-sold .sold-section{
+  display:none !important;
+}
+.ledger-table.section-hidden-balance .balance-col,
+.ledger-table.section-hidden-balance .balance-section{
+  display:none !important;
+}
+
+/* ============================================
+   PRINT STYLES (kept consistent; modal print kept as in provided file)
+   ============================================ */
+
+/* Print Header Component (shown for both prints) */
+.print-header {
+  display: none;
+}
+
+@media print {
+  @page { 
+    size: A4 landscape; 
+    margin: 0.5in 0.4in 0.6in 0.4in; 
+  }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+  body { background: white !important; overflow: visible !important; font-size: 9pt; color: #000 !important; line-height: 1.4; margin: 0; padding: 0;}
+  .nav-vertical, .panel, .tab-row, .toolbar, .no-print, .search-box, .button, .filter-group, .checkbox-toggle, .section-toggle, .h-scroll { display: none !important; }
+  .workspace { margin-left:0 !important; padding:0 !important; height:auto !important; overflow:visible !important; }
+  .card { border:none !important; box-shadow:none !important; border-radius:0 !important; }
+  .table-wrapper { overflow: visible !important; max-height:none !important; border:none !important; }
+
+  .print-header { display:block !important; text-align:center; margin-bottom:20px; padding:15px 0 20px 0; border-bottom:3px solid #5D866C; }
+  .print-header h1 { font-size:20pt; font-weight:700; color:#2f3b33; margin:0 0 8px 0; letter-spacing:0.5px; }
+  .print-header .print-subtitle { font-size:11pt; color:#5D866C; font-weight:600; margin:0 0 5px 0; }
+  .print-header .print-date { font-size:9pt; color:#666; margin:0; }
+  .print-header .print-filters { font-size:8pt; color:#888; margin-top:8px; font-style:italic; }
+
+  .ledger-table { page-break-inside:auto; border-collapse:collapse; width:100%; font-size:8pt; border:2px solid #2f3b33; }
+  .ledger-table thead { display:table-header-group; }
+  .ledger-table thead th { padding:10px 6px; font-size:7.5pt; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; border:1px solid #2f3b33; background:#f3efe6 !important; color:#2f3b33 !important; vertical-align:middle; text-align:center; line-height:1.3; }
+
+  .section-header { font-weight:700 !important; font-size:8pt !important; padding:8px 6px !important; }
+  .total-section { background:#bdd7ee !important; color:#1f4788 !important; border:2px solid #1f4788 !important; }
+  .sold-section { background:#f4c7c3 !important; color:#8b1a1a !important; border:2px solid #8b1a1a !important; }
+  .balance-section { background:#fff2cc !important; color:#7f6000 !important; border:2px solid #7f6000 !important; }
+
+  .ledger-table tbody td { padding:6px 5px; border:1px solid #999; font-size:8pt; vertical-align:middle; line-height:1.3; }
+  .ledger-table tbody tr { page-break-inside:avoid; }
+  .ledger-table tbody tr:hover { background:transparent !important; }
+
+  .total-col { background:#e8f4fc !important; }
+  .sold-col { background:#fef0ef !important; }
+  .balance-col { background:#fffbeb !important; }
+  .section-col { border-left:2px solid #2f3b33 !important; }
+
+  .num-cell { text-align:right !important; font-variant-numeric:tabular-nums; font-family:'Courier New', Consolas, monospace; white-space:nowrap; }
+
+  .totals-row { background:#d4edda !important; font-weight:700 !important; font-size:9pt !important; border-top:3px solid #2f3b33 !important; border-bottom:3px solid #2f3b33 !important; page-break-after:avoid; page-break-inside:avoid; }
+  .totals-row td { padding:10px 6px !important; border:1px solid #2f3b33 !important; background:#d4edda !important; position:static !important; }
+
+  .parent-row { background:#ffffff !important; font-weight:600; }
+  .parent-row td { border:1px solid #666 !important; padding:7px 5px !important; }
+  .child-row { background:#fafafa !important; font-weight:400; }
+  .child-row td { border:1px solid #ccc !important; font-size:7.5pt !important; }
+  .child-row td:first-child { padding-left:20px !important; }
+  .child-row td:first-child::before { content:"↳ "; color:#888; margin-right:4px; font-weight:bold; }
+
+  @page {
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size:8pt; font-family:Inter, sans-serif; color:#666; }
+    @bottom-center { content: ""; font-size:7pt; font-family:Inter, sans-serif; color:#999; font-weight:600; }
+    @bottom-left { content: "Printed: " attr(data-print-date); font-size:8pt; font-family:Inter, sans-serif; color:#666; }
+  }
+
+  /* =============================================
+     RECALCULATE MODAL PRINT (Customer Format) - kept exactly as in attached file
+     ============================================= */
+
+  body.printing-modal .nav-vertical,
+  body.printing-modal .panel,
+  body.printing-modal .tab-row,
+  body.printing-modal .toolbar,
+  body.printing-modal .tab-section,
+  body.printing-modal .workspace {
+    display: none !important;
+  }
+
+  body.printing-modal .modal-overlay {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  body.printing-modal .modal-content {
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  body.printing-modal .modal-header {
+    display: none !important;
+  }
+
+  body.printing-modal .modal-table-wrapper {
+    overflow: visible !important;
+  }
+
+  body.printing-modal .print-header-customer {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 25px;
+    padding: 15px 0 20px 0;
+    border-bottom: 3px solid #5D866C;
+  }
+
+  body.printing-modal .print-header-customer h1 {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #2f3b33;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.5px;
+  }
+
+  body.printing-modal .print-header-customer .print-subtitle {
+    font-size: 11pt;
+    color: #5D866C;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+  }
+
+  body.printing-modal .print-header-customer .print-date {
+    font-size: 9pt;
+    color: #666;
+    margin: 0;
+  }
+
+  body.printing-modal #modal_table .modal-opening-col,
+  body.printing-modal #modal_table .modal-sold-col,
+  body.printing-modal #modal_table .modal-opening-section,
+  body.printing-modal #modal_table .modal-sold-section,
+  body.printing-modal #modal_table .modal-updated-col,
+  body.printing-modal #modal_table .modal-final-col {
+    display: none !important;
+  }
+
+  body.printing-modal #modal_table .modal-print-col {
+    display: table-cell !important;
+  }
+
+  body.printing-modal #modal_table .modal-final-section {
+    display: none !important;
+  }
+
+  body.printing-modal #modal_table tr.zero-availability {
+    display: none !important;
+  }
+
+  body.printing-modal #modal_table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    border: 2px solid #2f3b33;
+  }
+
+  body.printing-modal #modal_table thead {
+    display: table-header-group;
+  }
+
+  body.printing-modal #modal_table thead th {
+    padding: 10px 6px;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 1px solid #2f3b33;
+    background: #f3efe6 !important;
+    color: #2f3b33 !important;
+    vertical-align: middle;
+    text-align: center;
+  }
+
+  body.printing-modal #modal_table .modal-final-section {
+    background: #fff2cc !important;
+    color: #7f6000 !important;
+    border: 2px solid #7f6000 !important;
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+  }
+
+  body.printing-modal #modal_table tbody td {
+    padding: 7px 6px;
+    border: 1px solid #999;
+    font-size: 8.5pt;
+    vertical-align: middle;
+    line-height: 1.4;
+  }
+
+  body.printing-modal #modal_table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  body.printing-modal #modal_table .num-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-family: 'Courier New', Consolas, monospace;
+    white-space: nowrap;
+  }
+
+  body.printing-modal #modal_table .parent-row {
+    background: #ffffff !important;
+    font-weight: 500;
+  }
+
+  body.printing-modal #modal_table .parent-row td {
+    border: 1px solid #666 !important;
+  }
+
+  body.printing-modal #modal_table .totals-row {
+    background: #d4edda !important;
+    font-weight: 700;
+    font-size: 9pt;
+    border-top: 3px solid #2f3b33 !important;
+    border-bottom: 3px solid #2f3b33 !important;
+  }
+
+  body.printing-modal #modal_table .totals-row td {
+    padding: 10px 6px !important;
+    border: 1px solid #2f3b33 !important;
+    background: #d4edda !important;
+  }
+
+  body.printing-modal #modal_table .balance-col {
+    background: #fffbeb !important;
+  }
+
+  body.printing-modal #modal_table .section-col {
+    border-left: 2px solid #2f3b33 !important;
+  }
+
+  body.printing-modal .updated-price-input {
+    display: none !important;
+  }
+
+  body.printing-modal .updated-price-display {
+    font-size: 8pt !important;
+    font-weight: 600;
+  }
+
+  body.printing-modal .modal-content::after {
+    content: "";
+    display: block;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ccc;
+  }
+}
+
+/* ============================================
+   MODAL STYLES (for Recalculate)
+   ============================================ */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:3000;
+}
+.modal-overlay.active{display:flex;}
+.modal-content{
+  width: calc(100% - 40px);
+  max-width: 100%;
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:10px;
+  padding:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.3);
+}
+
+/* Modal header controls */
+.modal-header{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:8px;
+}
+.modal-title{
+  font-weight:700;
+  font-size:16px;
+}
+.modal-btn{
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:#fff;
+  cursor:pointer;
+  font-weight:600;
+}
+.modal-btn:hover{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+/* Bulk apply controls */
+.modal-bulk {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.modal-bulk label{
+  font-weight:700;
+  font-size:12px;
+  color:var(--ink-soft);
+}
+.modal-bulk input{
+  width:140px;
+  padding:6px;
+  border-radius:6px;
+  border:1px solid var(--line);
+  text-align:right;
+}
+
+/* Updated price input */
+.updated-price-input{
+  width:110px;
+  padding:6px;
+  border-radius:6px;
+  border:1px solid var(--line);
+  text-align:right;
+  font-size:12px;
+}
+
+/* small helper for computed updated price */
+.updated-price-display{
+  font-size:12px;
+  color:var(--ink-soft);
+}
+
+/* final columns used for printing (hidden on screen) */
+.modal-final-col { display:none; }
+
+/* Ensure modal table uses same ledger-table styles but allow printable view */
+.modal-table-wrapper{ border-top:1px solid var(--line); }
+
+#modal_table { width: 100%; }
+#modal_table td, #modal_table th { white-space: nowrap; }
+.modal-table-wrapper { overflow:auto; }
+
+@media (max-width:700px){
+  .toolbar { gap:6px; }
+  .modal-bulk input{ width:100px; }
+}
+</style>
+</head>
+<body>
+
+<div class="nav-vertical">
+  <a href="index.html" class="nav-item" title="Add">➕</a>
+  <a href="added.html" class="nav-item" title="Added">📝</a>
+  <a href="sell.html" class="nav-item" title="Sell">💎</a>
+  <a href="reports.html" class="nav-item" title="Reports">📊</a>
+  <a href="reports2.html" class="nav-item active" title="Reports">📊</a>
+  <a href="reports3.html" class="nav-item" title="Reports">📊</a>
+</div>
+
+<div class="workspace">
+
+  <div class="panel">
+    <div class="page-title">REPORTS (2) - Multi-Select + Summary</div>
+    <div class="spacer"></div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input id="globalSearch" placeholder="Search...">
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn" data-tab="tabSUMMARY">📈 SUMMARY</button>
+    <button class="tab-btn" data-tab="tabAJMZ">💎 AJMZ</button>
+    <button class="tab-btn" data-tab="tabCALIB">📏 CALIB</button>
+    <button class="tab-btn active" data-tab="tabALL">🌐 ALL STONES</button>
+  </div>
+
+  <!-- ======================= SUMMARY TAB ======================= -->
+  <div class="tab-section" id="tabSUMMARY" data-print-title="SUMMARY">
+    <div class="toolbar">
+      <div class="filter-group">
+        <label class="filter-label">Data Source</label>
+        <select id="summary_source" class="filter-select">
+          <option value="ALL">All Stones</option>
+          <option value="AJMZ">AJMZ Only</option>
+          <option value="CALIB">CALIB Only</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Group By</label>
+        <select id="summary_groupby" class="filter-select">
+          <option value="party">Party</option>
+          <option value="lot">Lot</option>
+          <option value="shape">Shape</option>
+          <option value="size">Size</option>
+          <option value="grade">Grade</option>
+          <option value="party+lot">Party + Lot</option>
+          <option value="shape+size">Shape + Size + Lot</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date From</label>
+        <input type="date" id="summary_filter_date_from" class="filter-select">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date To</label>
+        <input type="date" id="summary_filter_date_to" class="filter-select">
+      </div>
+      <div class="spacer"></div>
+      <button class="button" id="summary_refresh">🔄 Refresh</button>
+      <button class="button" id="summary_print">🖨️ Print</button>
+      <button class="button" id="summary_export">📊 Export</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="ledger-table" id="summary_table">
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th class="section-col total-col">Opening CTS</th>
+              <th class="total-col">Opening PCS</th>
+              <th class="total-col">Opening Amount</th>
+              <th class="section-col sold-col">Sold CTS</th>
+              <th class="sold-col">Sold PCS</th>
+              <th class="sold-col">Sold Amount</th>
+              <th class="section-col balance-col">Balance CTS</th>
+              <th class="balance-col">Balance PCS</th>
+              <th class="balance-col">Balance Amount</th>
+              <th class="balance-col">Avg Price</th>
+            </tr>
+          </thead>
+          <tbody id="tbody_summary"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= AJMZ TAB ======================= -->
+  <div class="tab-section" id="tabAJMZ" data-print-title="AJMZ">
+
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header" id="printHeaderAJMZ">
+      <h1>💎 AJMZ INVENTORY REPORT</h1>
+      <p class="print-subtitle">Opening Balance • Sold • Remaining Balance</p>
+      <p class="print-date" id="printDateAJMZ"></p>
+      <p class="print-filters" id="printFiltersAJMZ"></p>
+    </div>
+
+    <div class="toolbar">
+      <div class="filter-group">
+        <label class="filter-label">Tx ID</label>
+        <div id="ajmz_filter_txid" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Party</label>
+        <div id="ajmz_filter_party" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Lot</label>
+        <div id="ajmz_filter_lot" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Shape</label>
+        <div id="ajmz_filter_shape" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Size</label>
+        <div id="ajmz_filter_size" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Grade</label>
+        <div id="ajmz_filter_grade" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date From</label>
+        <input type="date" id="ajmz_filter_date_from" class="filter-select">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date To</label>
+        <input type="date" id="ajmz_filter_date_to" class="filter-select">
+      </div>
+      <div class="spacer"></div>
+      <label class="checkbox-toggle">
+        <input type="checkbox" id="ajmz_show_added" checked>
+        <span>Added</span>
+      </label>
+      <label class="checkbox-toggle">
+        <input type="checkbox" id="ajmz_show_sell" checked>
+        <span>Sell</span>
+      </label>
+      <span class="section-toggle" id="ajmz_toggle_total">
+        <span class="section-toggle-icon"></span>
+        <span>Opening Balance</span>
+      </span>
+      <span class="section-toggle" id="ajmz_toggle_sold">
+        <span class="section-toggle-icon"></span>
+        <span>Sold</span>
+      </span>
+      <span class="section-toggle" id="ajmz_toggle_balance">
+        <span class="section-toggle-icon"></span>
+        <span>Remaining Balance</span>
+      </span>
+      <button class="button" id="ajmz_clear">🔄 Clear</button>
+      <button class="button" id="ajmz_print">🖨️ Print</button>
+      <button class="button" id="ajmz_export">📊 Export</button>
+      <button class="button" id="ajmz_recalc">🔁 Recalculate</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th rowspan="2">No.</th>
+              <th rowspan="2">Tx ID</th>
+              <th rowspan="2">Date</th>
+              <th rowspan="2">Party</th>
+              <th rowspan="2">Lot</th>
+              <th rowspan="2">Format</th>
+              <th rowspan="2">Shape</th>
+              <th rowspan="2">Size</th>
+              <th rowspan="2">Description</th>
+              <th colspan="4" class="section-header total-section">OPENING BALANCE</th>
+              <th colspan="4" class="section-header sold-section">SOLD</th>
+              <th colspan="4" class="section-header balance-section">REMAINING BALANCE</th>
+            </tr>
+            <tr>
+              <th class="section-col total-col">CTS</th>
+              <th class="total-col">PCS</th>
+              <th class="total-col">Price</th>
+              <th class="total-col">Amount</th>
+              <th class="section-col sold-col">CTS</th>
+              <th class="sold-col">PCS</th>
+              <th class="sold-col">Price</th>
+              <th class="sold-col">Amount</th>
+              <th class="section-col balance-col">CTS</th>
+              <th class="balance-col">PCS</th>
+              <th class="balance-col">Price</th>
+              <th class="balance-col">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="tbody_ajmz"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= CALIB TAB ======================= -->
+  <div class="tab-section" id="tabCALIB" data-print-title="CALIB">
+
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header" id="printHeaderCALIB">
+      <h1>📏 CALIB INVENTORY REPORT</h1>
+      <p class="print-subtitle">Opening Balance • Sold • Remaining Balance</p>
+      <p class="print-date" id="printDateCALIB"></p>
+      <p class="print-filters" id="printFiltersCALIB"></p>
+    </div>
+
+    <div class="toolbar">
+      <div class="filter-group">
+        <label class="filter-label">Tx ID</label>
+        <div id="calib_filter_txid" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Party</label>
+        <div id="calib_filter_party" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Lot</label>
+        <div id="calib_filter_lot" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Shape</label>
+        <div id="calib_filter_shape" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Size</label>
+        <div id="calib_filter_size" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Grade</label>
+        <div id="calib_filter_grade" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date From</label>
+        <input type="date" id="calib_filter_date_from" class="filter-select">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date To</label>
+        <input type="date" id="calib_filter_date_to" class="filter-select">
+      </div>
+      <div class="spacer"></div>
+      <label class="checkbox-toggle">
+        <input type="checkbox" id="calib_show_added" checked>
+        <span>Added</span>
+      </label>
+      <label class="checkbox-toggle">
+        <input type="checkbox" id="calib_show_sell" checked>
+        <span>Sell</span>
+      </label>
+      <span class="section-toggle" id="calib_toggle_total">
+        <span class="section-toggle-icon"></span>
+        <span>Total</span>
+      </span>
+      <span class="section-toggle" id="calib_toggle_sold">
+        <span class="section-toggle-icon"></span>
+        <span>Sold</span>
+      </span>
+      <span class="section-toggle" id="calib_toggle_balance">
+        <span class="section-toggle-icon"></span>
+        <span>Balance</span>
+      </span>
+      <button class="button" id="calib_clear">🔄 Clear</button>
+      <button class="button" id="calib_print">🖨️ Print</button>
+      <button class="button" id="calib_export">📊 Export</button>
+      <button class="button" id="calib_recalc">🔁 Recalculate</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th rowspan="2">No.</th>
+              <th rowspan="2">Tx ID</th>
+              <th rowspan="2">Date</th>
+              <th rowspan="2">Party</th>
+              <th rowspan="2">Lot</th>
+              <th rowspan="2">Grade</th>
+              <th rowspan="2">Shape</th>
+              <th rowspan="2">Size</th>
+              <th rowspan="2">Description</th>
+              <th colspan="3" class="section-header total-section">OPENING BALANCE</th>
+              <th colspan="3" class="section-header sold-section">SOLD</th>
+              <th colspan="3" class="section-header balance-section">REMAINING BALANCE</th>
+            </tr>
+            <tr>
+              <th class="section-col total-col">CTS</th>
+              <th class="total-col">Price</th>
+              <th class="total-col">Amount</th>
+              <th class="section-col sold-col">CTS</th>
+              <th class="sold-col">Price</th>
+              <th class="sold-col">Amount</th>
+              <th class="section-col balance-col">CTS</th>
+              <th class="balance-col">Price</th>
+              <th class="balance-col">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="tbody_calib"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= ALL STONES TAB ======================= -->
+  <div class="tab-section active" id="tabALL" data-print-title="ALL STONES">
+
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header" id="printHeaderALL">
+      <h1>🌐 ALL STONES INVENTORY REPORT</h1>
+      <p class="print-subtitle">Opening Balance • Sold • Remaining Balance</p>
+      <p class="print-date" id="printDateALL"></p>
+      <p class="print-filters" id="printFiltersALL"></p>
+    </div>
+
+    <div class="toolbar">
+      <div class="filter-group">
+        <label class="filter-label">Tx ID</label>
+        <div id="all_filter_txid" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Party</label>
+        <div id="all_filter_party" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Lot</label>
+        <div id="all_filter_lot" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Shape</label>
+        <div id="all_filter_shape" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Size</label>
+        <div id="all_filter_size" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Grade</label>
+        <div id="all_filter_grade" class="searchable-select-wrapper"></div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date From</label>
+        <input type="date" id="all_filter_date_from" class="filter-select">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Date To</label>
+        <input type="date" id="all_filter_date_to" class="filter-select">
+      </div>
+      <div class="spacer"></div>
+      <label class="checkbox-toggle">
+        <input type="checkbox" id="all_show_added" checked>
+        <span>Added</span>
+      </label>
+      <label class="checkbox-toggle">
+        <input type="checkbox" id="all_show_sell" checked>
+        <span>Sell</span>
+      </label>
+      <span class="section-toggle" id="all_toggle_total">
+        <span class="section-toggle-icon"></span>
+        <span>Total</span>
+      </span>
+      <span class="section-toggle" id="all_toggle_sold">
+        <span class="section-toggle-icon"></span>
+        <span>Sold</span>
+      </span>
+      <span class="section-toggle" id="all_toggle_balance">
+        <span class="section-toggle-icon"></span>
+        <span>Balance</span>
+      </span>
+      <button class="button" id="all_clear">🔄 Clear</button>
+      <button class="button" id="all_print">🖨️ Print</button>
+      <button class="button" id="all_export">📊 Export</button>
+      <button class="button" id="all_recalc">🔁 Recalculate</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th rowspan="2">No.</th>
+              <th rowspan="2">Tx ID</th>
+              <th rowspan="2">Date</th>
+              <th rowspan="2">Party</th>
+              <th rowspan="2">Lot</th>
+              <th rowspan="2">Shape</th>
+              <th rowspan="2">Size</th>
+              <th rowspan="2">Description</th>
+              <th colspan="3" class="section-header total-section">OPENING BALANCE</th>
+              <th colspan="3" class="section-header sold-section">SOLD</th>
+              <th colspan="3" class="section-header balance-section">REMAINING BALANCE</th>
+            </tr>
+            <tr>
+              <th class="section-col total-col">CTS</th>
+              <th class="total-col">Price</th>
+              <th class="total-col">Amount</th>
+              <th class="section-col sold-col">CTS</th>
+              <th class="sold-col">Price</th>
+              <th class="sold-col">Amount</th>
+              <th class="section-col balance-col">CTS</th>
+              <th class="balance-col">Price</th>
+              <th class="balance-col">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="tbody_all"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==========================
+     RECALCULATE MODAL
+     (Used for all three types)
+     ========================== -->
+<div id="recalcModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="recalcTitle">
+    
+    <!-- Print-only header for customer view (hidden on screen) -->
+    <div class="print-header-customer" style="display:none;">
+      <h1 id="printModalTitle">📋 AVAILABLE BALANCE REPORT</h1>
+      <p class="print-subtitle" id="printModalSubtitle">Customer Recalculation Sheet</p>
+      <p class="print-date" id="printDateDisplay"></p>
+    </div>
+    
+    <div class="modal-header">
+      <div class="modal-title" id="recalcTitle">Recalculate - <span id="recalcTypeLabel"></span></div>
+      <div class="spacer"></div>
+
+      <!-- Bulk Price Update Control -->
+      <div class="modal-bulk" title="Enter a fixed price or % (e.g. 150 or 5%)">
+        <label for="modalBulkInput">Updated Price</label>
+        <input id="modalBulkInput" placeholder="e.g. 150 or 10%" />
+        <button class="modal-btn" id="modalApplyAll">Apply to All</button>
+      </div>
+
+      <!-- Exclude Zero Availability Toggle -->
+      <label class="checkbox-toggle" title="Hide items with zero CTS balance">
+        <input type="checkbox" id="modalExcludeZero">
+        <span>Exclude Zero</span>
+      </label>
+
+      <button class="modal-btn" id="modalExport">📊 Export</button>
+      <button class="modal-btn" id="modalPrint">🖨️ Print</button>
+      <button class="modal-btn" id="modalClose">✖ Close</button>
+    </div>
+
+    <div class="modal-table-wrapper">
+      <!-- Modal table will be injected here -->
+      <div id="modalTableContainer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'reports2_state_v1';
+
+const firebaseConfig={apiKey:"AIzaSyC72tFu_MdXf4eq4PMI-rtd4PpMfpLNZpM",authDomain:"ajmzinventory.firebaseapp.com",databaseURL:"https://ajmzinventory-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ajmzinventory",storageBucket:"ajmzinventory.firebasestorage.app",messagingSenderId:"1069845316242",appId:"1:1069845316242:web:c55be9de3724734f88dc4b"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+let AJMZ_PARENTS=[],CALIB_PARENTS=[],SELL_MAP={};
+const selects = {};
+let stateCache = null; // runtime cache of restored state
+
+function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+// fmt: returns formatted number with 2 decimals, but if the value rounds to 0.00 return blank as required
+function fmt(n){
+  const num = Number(n||0);
+  if(Math.abs(num) < 0.005) return ""; // display blank for values that would show as 0.00
+  return num.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function parseNum(v){return Number(String(v||"0").replace(/,/g,""))||0;}
+
+function parseMulti(str){
+  if(!str)return [];
+  if(Array.isArray(str))return str;
+  return String(str).split(",").map(s=>s.trim()).filter(Boolean);
+}
+
+function multiDisplay(arr){
+  if(!arr)return "";
+  if(Array.isArray(arr))return arr.join(", ");
+  return arr;
+}
+
+/* =====================================================
+   MULTI-SELECT SEARCHABLE SELECT COMPONENT
+===================================================== */
+function createSearchableSelect(wrapperId, values){
+  const wrapper=document.getElementById(wrapperId);
+  if(!wrapper)return null;
+
+  wrapper.innerHTML=`
+    <input type="text" class="searchable-select-input" placeholder="All" readonly>
+    <div class="searchable-select-dropdown">
+      <div class="searchable-select-search">
+        <input type="text" placeholder="Search..." class="search-input">
+      </div>
+    </div>
+  `;
+
+  const input=wrapper.querySelector('.searchable-select-input');
+  const dropdown=wrapper.querySelector('.searchable-select-dropdown');
+  const searchInput=dropdown.querySelector('.search-input');
+
+  let selectedValues=[];
+
+  /* Create "All" option */
+  const allOpt=document.createElement('div');
+  allOpt.className='searchable-select-option all-option';
+  allOpt.innerHTML=`
+    <input type="checkbox" id="${wrapperId}_all" checked>
+    <label for="${wrapperId}_all">All</label>
+  `;
+  dropdown.appendChild(allOpt);
+
+  const allCheckbox=allOpt.querySelector('input[type="checkbox"]');
+
+  /* Create value options */
+  values.forEach((val,idx)=>{
+    const opt=document.createElement('div');
+    opt.className='searchable-select-option';
+    const checkId=`${wrapperId}_opt_${idx}`;
+    opt.innerHTML=`
+      <input type="checkbox" id="${checkId}" data-value="${esc(val)}">
+      <label for="${checkId}">${esc(val)}</label>
+    `;
+    opt.dataset.value=val;
+    dropdown.appendChild(opt);
+  });
+
+  /* Update display text */
+  function updateDisplay(){
+    if(selectedValues.length===0){
+      input.value='All';
+      input.classList.remove('has-selection');
+      allCheckbox.checked=true;
+    } else if(selectedValues.length===1){
+      input.value=selectedValues[0];
+      input.classList.add('has-selection');
+      allCheckbox.checked=false;
+    } else if(selectedValues.length<=3){
+      input.value=selectedValues.join(', ');
+      input.classList.add('has-selection');
+      allCheckbox.checked=false;
+    } else {
+      input.value=`${selectedValues.length} selected`;
+      input.classList.add('has-selection');
+      allCheckbox.checked=false;
+    }
+  }
+
+  /* Handle "All" checkbox */
+  allCheckbox.addEventListener('change',()=>{
+    if(allCheckbox.checked){
+      selectedValues=[];
+      dropdown.querySelectorAll('input[type="checkbox"]:not(#'+wrapperId+'_all)').forEach(cb=>{
+        cb.checked=false;
+      });
+      updateDisplay();
+      wrapper.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+  });
+
+  /* Handle individual checkboxes */
+  dropdown.querySelectorAll('.searchable-select-option:not(.all-option)').forEach(opt=>{
+    const checkbox=opt.querySelector('input[type="checkbox"]');
+    const value=checkbox.dataset.value;
+
+    checkbox.addEventListener('change',()=>{
+      if(checkbox.checked){
+        if(!selectedValues.includes(value)){
+          selectedValues.push(value);
+        }
+      } else {
+        selectedValues=selectedValues.filter(v=>v!==value);
+      }
+
+      if(selectedValues.length===0){
+        allCheckbox.checked=true;
+      } else {
+        allCheckbox.checked=false;
+      }
+
+      updateDisplay();
+      wrapper.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+
+    /* Allow clicking label or div to toggle */
+    opt.addEventListener('click',e=>{
+      if(e.target.tagName!=='INPUT'){
+        checkbox.checked=!checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+
+  /* Open/close dropdown */
+  input.addEventListener('click',e=>{
+    e.stopPropagation();
+    const active=dropdown.classList.contains('active');
+    
+    // Close all other dropdowns
+    document.querySelectorAll('.searchable-select-dropdown').forEach(d=>d.classList.remove('active'));
+    
+    if(!active){
+      dropdown.classList.add('active');
+      searchInput.value='';
+      searchInput.focus();
+      
+      // Show all options
+      dropdown.querySelectorAll('.searchable-select-option:not(.all-option)').forEach(opt=>{
+        opt.classList.remove('hidden');
+      });
+    }
+  });
+
+  /* Search filter */
+  searchInput.addEventListener('input',()=>{
+    const term=searchInput.value.toLowerCase();
+    dropdown.querySelectorAll('.searchable-select-option:not(.all-option)').forEach(opt=>{
+      const text=opt.querySelector('label').textContent.toLowerCase();
+      opt.classList.toggle('hidden',!text.includes(term));
+    });
+  });
+
+  /* Close dropdown when clicking outside */
+  document.addEventListener('click',e=>{
+    if(!wrapper.contains(e.target)){
+      dropdown.classList.remove('active');
+    }
+  });
+
+  /* Prevent dropdown from closing when clicking inside */
+  dropdown.addEventListener('click',e=>{
+    e.stopPropagation();
+  });
+
+  return {
+    getValue:()=>selectedValues,
+    setValue:(vals)=>{
+      selectedValues=Array.isArray(vals)?[...vals]:[];
+      
+      dropdown.querySelectorAll('input[type="checkbox"]:not(#'+wrapperId+'_all)').forEach(cb=>{
+        cb.checked=selectedValues.includes(cb.dataset.value);
+      });
+      
+      updateDisplay();
+      // notify change so listeners can save state if required
+      wrapper.dispatchEvent(new Event('change',{bubbles:true}));
+    },
+    reset:()=>{
+      selectedValues=[];
+      allCheckbox.checked=true;
+      dropdown.querySelectorAll('input[type="checkbox"]:not(#'+wrapperId+'_all)').forEach(cb=>{
+        cb.checked=false;
+      });
+      updateDisplay();
+      wrapper.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+  };
+}
+
+/* =====================================================
+   MATCHES FILTER - MULTI-SELECT VERSION
+===================================================== */
+function matchesFilter(value, filterValues){
+  if(!filterValues || filterValues.length===0) return true;
+  if(Array.isArray(value)){
+    return value.some(v=>filterValues.includes(String(v||"").trim()));
+  }
+  return filterValues.includes(String(value||"").trim());
+}
+
+/* =====================================================
+   PERSISTENT UI STATE (localStorage)
+   - saveState: debounced
+   - restoreState: called after loadData/populateFilters
+===================================================== */
+
+function getCurrentState(){
+  const state = {
+    activeTab: (document.querySelector('.tab-btn.active')?.dataset?.tab) || 'tabALL',
+    globalSearch: document.getElementById('globalSearch')?.value || '',
+    selects: {},
+    dates: {},
+    checkboxes: {},
+    toggles: {},
+    summary: {
+      source: document.getElementById('summary_source')?.value || 'ALL',
+      groupby: document.getElementById('summary_groupby')?.value || 'party',
+      dateFrom: document.getElementById('summary_filter_date_from')?.value || '',
+      dateTo: document.getElementById('summary_filter_date_to')?.value || ''
+    }
+  };
+
+  const prefixes = ['ajmz','calib','all'];
+  const filters = ['txid','party','lot','shape','size','grade'];
+  prefixes.forEach(pref=>{
+    filters.forEach(f=>{
+      const key = `${pref}_${f}`;
+      if(selects[key] && typeof selects[key].getValue === 'function'){
+        state.selects[key] = selects[key].getValue();
+      }
+    });
+    // dates
+    state.dates[`${pref}_date_from`] = document.getElementById(`${pref}_filter_date_from`)?.value || '';
+    state.dates[`${pref}_date_to`] = document.getElementById(`${pref}_filter_date_to`)?.value || '';
+    // checkboxes
+    state.checkboxes[`${pref}_show_added`] = !!document.getElementById(`${pref}_show_added`)?.checked;
+    state.checkboxes[`${pref}_show_sell`] = !!document.getElementById(`${pref}_show_sell`)?.checked;
+    // toggles collapsed state
+    const t_total = document.querySelector(`#${pref}_toggle_total .section-toggle-icon`)?.classList.contains('collapsed') || false;
+    const t_sold = document.querySelector(`#${pref}_toggle_sold .section-toggle-icon`)?.classList.contains('collapsed') || false;
+    const t_balance = document.querySelector(`#${pref}_toggle_balance .section-toggle-icon`)?.classList.contains('collapsed') || false;
+    state.toggles[`${pref}_toggle_total_collapsed`] = t_total;
+    state.toggles[`${pref}_toggle_sold_collapsed`] = t_sold;
+    state.toggles[`${pref}_toggle_balance_collapsed`] = t_balance;
+  });
+
+  // modal bulk input (optional)
+  state.modal = {
+    bulkValue: document.getElementById('modalBulkInput')?.value || '',
+    excludeZero: !!document.getElementById('modalExcludeZero')?.checked
+  };
+
+  return state;
+}
+
+function saveStateImmediate(){
+  try{
+    const s = getCurrentState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    stateCache = s;
+  }catch(e){ console.warn('Could not save state', e); }
+}
+let saveDebounceTimer = null;
+function saveStateDebounced(){
+  if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(()=> saveStateImmediate(), 250);
+}
+
+function restoreState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    stateCache = s;
+    // Set global search
+    if(s.globalSearch !== undefined) document.getElementById('globalSearch').value = s.globalSearch;
+
+    // Set selects if they exist (populateFilters should have created selects)
+    if(s.selects){
+      Object.keys(s.selects).forEach(k=>{
+        if(selects[k] && typeof selects[k].setValue === 'function'){
+          selects[k].setValue(s.selects[k]);
+        }
+      });
+    }
+
+    // Dates
+    if(s.dates){
+      Object.keys(s.dates).forEach(k=>{
+        const el = document.getElementById(k.replace('_','_filter_') );
+        // we stored keys like 'ajmz_date_from' => element id 'ajmz_filter_date_from'
+        const elId = k.replace('_date_','_filter_date_'); // crude mapping
+        const elem = document.getElementById(elId);
+        if(elem) elem.value = s.dates[k];
+      });
+    }
+    // Checkboxes
+    if(s.checkboxes){
+      Object.keys(s.checkboxes).forEach(k=>{
+        const el = document.getElementById(k);
+        if(el && typeof el.checked !== 'undefined') el.checked = !!s.checkboxes[k];
+      });
+    }
+
+    // Toggles: apply collapsed classes to icons and table hidden classes
+    if(s.toggles){
+      ['ajmz','calib','all'].forEach(pref=>{
+        const t_total = s.toggles[`${pref}_toggle_total_collapsed`];
+        const t_sold = s.toggles[`${pref}_toggle_sold_collapsed`];
+        const t_balance = s.toggles[`${pref}_toggle_balance_collapsed`];
+        const iconTotal = document.querySelector(`#${pref}_toggle_total .section-toggle-icon`);
+        const iconSold = document.querySelector(`#${pref}_toggle_sold .section-toggle-icon`);
+        const iconBalance = document.querySelector(`#${pref}_toggle_balance .section-toggle-icon`);
+        const table = document.querySelector(`#tab${pref.toUpperCase()} .ledger-table`);
+        if(iconTotal) { if(t_total) iconTotal.classList.add('collapsed'); else iconTotal.classList.remove('collapsed'); }
+        if(iconSold) { if(t_sold) iconSold.classList.add('collapsed'); else iconSold.classList.remove('collapsed'); }
+        if(iconBalance) { if(t_balance) iconBalance.classList.add('collapsed'); else iconBalance.classList.remove('collapsed'); }
+        if(table){
+          if(t_total) table.classList.add('section-hidden-total'); else table.classList.remove('section-hidden-total');
+          if(t_sold) table.classList.add('section-hidden-sold'); else table.classList.remove('section-hidden-sold');
+          if(t_balance) table.classList.add('section-hidden-balance'); else table.classList.remove('section-hidden-balance');
+        }
+      });
+    }
+
+    // Summary settings
+    if(s.summary){
+      if(s.summary.source) document.getElementById('summary_source').value = s.summary.source;
+      if(s.summary.groupby) document.getElementById('summary_groupby').value = s.summary.groupby;
+      if(s.summary.dateFrom) document.getElementById('summary_filter_date_from').value = s.summary.dateFrom;
+      if(s.summary.dateTo) document.getElementById('summary_filter_date_to').value = s.summary.dateTo;
+    }
+
+    // Modal
+    if(s.modal){
+      if(s.modal.bulkValue) document.getElementById('modalBulkInput').value = s.modal.bulkValue;
+      if(typeof s.modal.excludeZero !== 'undefined') document.getElementById('modalExcludeZero').checked = !!s.modal.excludeZero;
+    }
+
+    // Active tab
+    if(s.activeTab){
+      const btn = document.querySelector(`.tab-btn[data-tab="${s.activeTab}"]`);
+      if(btn) {
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-section').forEach(sec=>sec.classList.remove('active'));
+        const target = btn.dataset.tab;
+        const secEl = document.getElementById(target);
+        if(secEl) secEl.classList.add('active');
+      }
+    }
+
+  }catch(e){ console.warn('Could not restore state', e); }
+}
+
+/* =====================================================
+   LOAD DATA
+===================================================== */
+async function loadData(){
+  const [ajParents,calibParents,sellSnap]=await Promise.all([
+    db.ref("ajmzRecords").once("value"),
+    db.ref("calibRecords").once("value"),
+    db.ref("sellRecords").once("value")
+  ]);
+
+  SELL_MAP={};
+  if(sellSnap.exists()){
+    sellSnap.forEach(parentSnap=>{
+      const parentKey=parentSnap.key;
+      SELL_MAP[parentKey]=[];
+      parentSnap.forEach(childSnap=>{
+        const obj=childSnap.val();
+        obj.key=childSnap.key;
+        obj.cts=parseNum(obj.cts);
+        obj.pcs=parseNum(obj.pcs);
+        obj.price=parseNum(obj.price);
+        obj.amount=parseNum(obj.amount||(obj.cts*obj.price));
+        SELL_MAP[parentKey].push(obj);
+      });
+    });
+  }
+
+  AJMZ_PARENTS=[];
+  if(ajParents.exists()){
+    ajParents.forEach(snap=>{
+      const v=snap.val();
+      v.key=snap.key;
+      v.type="AJMZ";
+      v.shape=parseMulti(v.shape);
+      v.size=parseMulti(v.size);
+      v.cts=parseNum(v.cts);
+      v.pcs=parseNum(v.pcs);
+      v.price=parseNum(v.price);
+      v.amount=parseNum(v.amount||(v.cts*v.price));
+      v.__sells=SELL_MAP[v.key]||[];
+      AJMZ_PARENTS.push(v);
+    });
+  }
+
+  CALIB_PARENTS=[];
+  if(calibParents.exists()){
+    calibParents.forEach(snap=>{
+      const v=snap.val();
+      v.key=snap.key;
+      v.type="CALIB";
+      v.shape=parseMulti(v.shape);
+      v.size=parseMulti(v.size);
+      v.cts=parseNum(v.cts);
+      v.price=parseNum(v.price);
+      v.amount=parseNum(v.amount||(v.cts*v.price));
+      v.__sells=SELL_MAP[v.key]||[];
+      delete v.lotFormat;
+      CALIB_PARENTS.push(v);
+    });
+  }
+
+  populateFilters();
+  // restore state after filters created
+  restoreState();
+
+  // initial renders (respect restored state)
+  renderSummary();
+  renderAJMZ();
+  renderCALIB();
+  renderALL();
+}
+
+/* =====================================================
+   POPULATE FILTERS
+   - After creating selects we attach a change listener to save state
+===================================================== */
+function populateFilters(){
+  // Build filter values from both parents and sell children
+  const ajTxIds=[...new Set(AJMZ_PARENTS.map(p=>p.txId).filter(Boolean))].sort();
+  const calibTxIds=[...new Set(CALIB_PARENTS.map(p=>p.txId).filter(Boolean))].sort();
+  const allTxIds=[...new Set([...ajTxIds,...calibTxIds])].sort();
+
+  const parties = new Set();
+  AJMZ_PARENTS.forEach(p => { if(p.party) parties.add(p.party); });
+  CALIB_PARENTS.forEach(p => { if(p.party) parties.add(p.party); });
+  Object.values(SELL_MAP).forEach(children => { children.forEach(c => { if(c.party) parties.add(c.party); }); });
+  const partiesSorted = [...parties].filter(Boolean).sort();
+
+  const ajLots=[...new Set(AJMZ_PARENTS.map(p=>p.lotName).filter(Boolean))].sort();
+  const calibLots=[...new Set(CALIB_PARENTS.map(p=>p.lotName).filter(Boolean))].sort();
+  const allLots=[...new Set([...ajLots,...calibLots])].sort();
+
+  const ajShapes=new Set();
+  AJMZ_PARENTS.forEach(p=>{ const shapes=parseMulti(p.shape); shapes.forEach(s=>ajShapes.add(s)); });
+  const ajShapesSorted=[...ajShapes].filter(Boolean).sort();
+  const calibShapes=new Set();
+  CALIB_PARENTS.forEach(p=>{ const shapes=parseMulti(p.shape); shapes.forEach(s=>calibShapes.add(s)); });
+  const calibShapesSorted=[...calibShapes].filter(Boolean).sort();
+  const allShapes=[...new Set([...ajShapesSorted,...calibShapesSorted])].sort();
+
+  const ajSizes=new Set();
+  AJMZ_PARENTS.forEach(p=>{ const sizes=parseMulti(p.size); sizes.forEach(s=>ajSizes.add(s)); });
+  const ajSizesSorted=[...ajSizes].filter(Boolean).sort();
+  const calibSizes=new Set();
+  CALIB_PARENTS.forEach(p=>{ const sizes=parseMulti(p.size); sizes.forEach(s=>calibSizes.add(s)); });
+  const calibSizesSorted=[...calibSizes].filter(Boolean).sort();
+  const allSizes=[...new Set([...ajSizesSorted,...calibSizesSorted])].sort();
+
+  const ajGrades=[...new Set(AJMZ_PARENTS.map(p=>p.grade).filter(Boolean))].sort();
+  const calibGrades=[...new Set(CALIB_PARENTS.map(p=>p.grade).filter(Boolean))].sort();
+  const allGrades=[...new Set([...ajGrades,...calibGrades])].sort();
+
+  // Create selects and attach change->saveStateDebounced
+  const createAndHook = (id, values) => {
+    const obj = createSearchableSelect(id, values);
+    const wrapper = document.getElementById(id);
+    if(wrapper) wrapper.addEventListener('change', ()=>{ saveStateDebounced(); });
+    return obj;
+  };
+
+  selects.ajmz_txid = createAndHook("ajmz_filter_txid", ajTxIds);
+  selects.ajmz_party = createAndHook("ajmz_filter_party", partiesSorted);
+  selects.ajmz_lot = createAndHook("ajmz_filter_lot", ajLots);
+  selects.ajmz_shape = createAndHook("ajmz_filter_shape", ajShapesSorted);
+  selects.ajmz_size = createAndHook("ajmz_filter_size", ajSizesSorted);
+  selects.ajmz_grade = createAndHook("ajmz_filter_grade", ajGrades);
+
+  selects.calib_txid = createAndHook("calib_filter_txid", calibTxIds);
+  selects.calib_party = createAndHook("calib_filter_party", partiesSorted);
+  selects.calib_lot = createAndHook("calib_filter_lot", calibLots);
+  selects.calib_shape = createAndHook("calib_filter_shape", calibShapesSorted);
+  selects.calib_size = createAndHook("calib_filter_size", calibSizesSorted);
+  selects.calib_grade = createAndHook("calib_filter_grade", calibGrades);
+
+  selects.all_txid = createAndHook("all_filter_txid", allTxIds);
+  selects.all_party = createAndHook("all_filter_party", partiesSorted);
+  selects.all_lot = createAndHook("all_filter_lot", allLots);
+  selects.all_shape = createAndHook("all_filter_shape", allShapes);
+  selects.all_size = createAndHook("all_filter_size", allSizes);
+  selects.all_grade = createAndHook("all_filter_grade", allGrades);
+}
+
+/* =====================================================
+   Helper: create horizontal scrollbar sync for each .table-wrapper
+===================================================== */
+function ensureHorizontalSyncFor(wrapper){
+  if(!wrapper) return;
+  let h = wrapper.querySelector('.h-scroll');
+  const table = wrapper.querySelector('.ledger-table');
+  if(!table) return;
+  if(!h){
+    h = document.createElement('div');
+    h.className = 'h-scroll';
+    const inner = document.createElement('div');
+    inner.className = 'h-inner';
+    h.appendChild(inner);
+    wrapper.insertBefore(h, wrapper.firstChild);
+  }
+  const inner = h.querySelector('.h-inner');
+
+  function updateWidth(){
+    inner.style.width = table.scrollWidth + 'px';
+  }
+
+  updateWidth();
+
+  h.onscroll = function(){ wrapper.scrollLeft = h.scrollLeft; };
+  wrapper.onscroll = function(){ h.scrollLeft = wrapper.scrollLeft; };
+
+  const observer = new ResizeObserver(()=>{ updateWidth(); });
+  observer.observe(table);
+  window.addEventListener('resize', updateWidth);
+}
+
+/* =====================================================
+   Synchronize sticky top for totals rows relative to thead height
+===================================================== */
+function adjustStickyPositions(){
+  document.querySelectorAll('.ledger-table').forEach(table=>{
+    const thead = table.querySelector('thead');
+    if(!thead) return;
+    const theadHeight = thead.offsetHeight || 0;
+    const totals = table.querySelector('tbody .totals-row');
+    if(totals){
+      totals.querySelectorAll('td').forEach(td=>{
+        td.style.top = theadHeight + 'px';
+        td.style.zIndex = 195;
+      });
+    }
+  });
+}
+
+/* =====================================================
+   RENDER FUNCTIONS (MAIN TABLES) - with Row Numbering
+   unchanged except we call saveStateDebounced in UI handlers
+===================================================== */
+function renderAJMZ(){
+  const search=document.getElementById("globalSearch").value.toLowerCase();
+  const txids=selects.ajmz_txid?.getValue()||[];
+  const parties=selects.ajmz_party?.getValue()||[];
+  const lots=selects.ajmz_lot?.getValue()||[];
+  const shapes=selects.ajmz_shape?.getValue()||[];
+  const sizes=selects.ajmz_size?.getValue()||[];
+  const grades=selects.ajmz_grade?.getValue()||[];
+  const dateFrom=document.getElementById("ajmz_filter_date_from").value;
+  const dateTo=document.getElementById("ajmz_filter_date_to").value;
+  
+  const showAdded=document.getElementById("ajmz_show_added").checked;
+  const showSell=document.getElementById("ajmz_show_sell").checked;
+
+  let filtered=AJMZ_PARENTS.filter(p=>{
+    if(!matchesFilter(p.txId, txids)) return false;
+    if(parties.length > 0) {
+      const parentMatch = matchesFilter(p.party, parties);
+      const childMatch = p.__sells && p.__sells.some(s => matchesFilter(s.party, parties));
+      if(!parentMatch && !childMatch) return false;
+    }
+    if(!matchesFilter(p.lotName, lots)) return false;
+    if(!matchesFilter(p.shape, shapes)) return false;
+    if(!matchesFilter(p.size, sizes)) return false;
+    if(!matchesFilter(p.grade, grades)) return false;
+    if(search){const txt=JSON.stringify(p).toLowerCase();if(!txt.includes(search))return false;}
+    return true;
+  });
+
+  const tbody=document.getElementById("tbody_ajmz");
+  tbody.innerHTML="";
+
+  let totalOpeningCts = 0;
+  let totalOpeningPcs = 0;
+  let totalOpeningAmount = 0;
+  let totalSoldCts = 0;
+  let totalSoldPcs = 0;
+  let totalSoldAmount = 0;
+  let totalBalanceCts = 0;
+  let totalBalancePcs = 0;
+  let totalBalanceAmount = 0;
+
+  let rowIndex = 1;
+
+  filtered.forEach(parent=>{
+    const sells=parent.__sells||[];
+    const soldC=sells.reduce((sum,s)=>sum+s.cts,0);
+    const soldP=sells.reduce((sum,s)=>sum+s.pcs,0);
+    const soldA=sells.reduce((sum,s)=>sum+s.amount,0);
+
+    const totalC=parent.cts;
+    const totalP=parent.pcs;
+    const totalA=totalC * parent.price;
+
+    const balC=totalC - soldC;
+    const balP=totalP - soldP;
+    const balA=balC * parent.price;
+
+    totalOpeningCts += totalC;
+    totalOpeningPcs += totalP;
+    totalOpeningAmount += totalA;
+    totalSoldCts += soldC;
+    totalSoldPcs += soldP;
+    totalSoldAmount += soldA;
+    totalBalanceCts += balC;
+    totalBalancePcs += balP;
+    totalBalanceAmount += balA;
+
+    const avgSellPrice=soldC>0?soldA/soldC:0;
+
+    const parentDateMatch = (!dateFrom || parent.date >= dateFrom) && (!dateTo || parent.date <= dateTo);
+
+    if(showAdded && parentDateMatch){
+      tbody.insertAdjacentHTML("beforeend",`
+        <tr class="parent-row">
+          <td>${rowIndex}</td>
+          <td>${esc(parent.txId)}</td>
+          <td>${esc(parent.date)}</td>
+          <td>${esc(parent.party)}</td>
+          <td>${esc(parent.lotName||"")}</td>
+          <td>${esc(parent.lotFormat||"")}</td>
+          <td>${esc(multiDisplay(parent.shape))}</td>
+          <td>${esc(multiDisplay(parent.size))}</td>
+          <td>${esc(parent.description||"")}</td>
+          <td class="num-cell section-col total-col">${fmt(totalC)}</td>
+          <td class="num-cell total-col">${fmt(totalP)}</td>
+          <td class="num-cell total-col">${fmt(parent.price)}</td>
+          <td class="num-cell total-col">${fmt(totalA)}</td>
+          <td class="num-cell section-col sold-col">${fmt(soldC)}</td>
+          <td class="num-cell sold-col">${fmt(soldP)}</td>
+          <td class="num-cell sold-col">${fmt(avgSellPrice)}</td>
+          <td class="num-cell sold-col">${fmt(soldA)}</td>
+          <td class="num-cell section-col balance-col">${fmt(balC)}</td>
+          <td class="num-cell balance-col">${fmt(balP)}</td>
+          <td class="num-cell balance-col">${fmt(parent.price)}</td>
+          <td class="num-cell balance-col">${fmt(balA)}</td>
+        </tr>
+      `);
+      rowIndex++;
+    }
+
+    if(showSell){
+      sells.forEach(sell=>{
+        const sellDateMatch = (!dateFrom || sell.date >= dateFrom) && (!dateTo || sell.date <= dateTo);
+        if(sellDateMatch){
+          tbody.insertAdjacentHTML("beforeend",`
+            <tr class="child-row">
+              <td>${rowIndex}</td>
+              <td>${esc(sell.sellId||'')}</td>
+              <td>${esc(sell.date||'')}</td>
+              <td>${esc(sell.party||'')}</td>
+              <td>${esc(parent.lotName||"")}</td>
+              <td>${esc(parent.lotFormat||"")}</td>
+              <td>${esc(multiDisplay(parent.shape))}</td>
+              <td>${esc(multiDisplay(parent.size))}</td>
+              <td>${esc(parent.description||"")}</td>
+              <td class="num-cell section-col total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell section-col sold-col">${fmt(sell.cts)}</td>
+              <td class="num-cell sold-col">${fmt(sell.pcs)}</td>
+              <td class="num-cell sold-col">${fmt(sell.price)}</td>
+              <td class="num-cell sold-col">${fmt(sell.amount)}</td>
+              <td class="num-cell section-col balance-col"></td>
+              <td class="num-cell balance-col"></td>
+              <td class="num-cell balance-col"></td>
+              <td class="num-cell balance-col"></td>
+            </tr>
+          `);
+          rowIndex++;
+        }
+      });
+    }
+  });
+
+  const avgOpeningPrice = totalOpeningCts > 0 ? totalOpeningAmount / totalOpeningCts : 0;
+  const avgSoldPrice = totalSoldCts > 0 ? totalSoldAmount / totalSoldCts : 0;
+  const avgBalancePrice = totalBalanceCts > 0 ? totalBalanceAmount / totalBalanceCts : 0;
+
+  const totalsRow = `
+    <tr class="totals-row">
+      <td colspan="9" style="text-align:left;font-weight:700;font-size:14px;">📊 TOTALS</td>
+      <td class="num-cell section-col total-col">${fmt(totalOpeningCts)}</td>
+      <td class="num-cell total-col">${fmt(totalOpeningPcs)}</td>
+      <td class="num-cell total-col">${fmt(avgOpeningPrice)}</td>
+      <td class="num-cell total-col">${fmt(totalOpeningAmount)}</td>
+      <td class="num-cell section-col sold-col">${fmt(totalSoldCts)}</td>
+      <td class="num-cell sold-col">${fmt(totalSoldPcs)}</td>
+      <td class="num-cell sold-col">${fmt(avgSoldPrice)}</td>
+      <td class="num-cell sold-col">${fmt(totalSoldAmount)}</td>
+      <td class="num-cell section-col balance-col">${fmt(totalBalanceCts)}</td>
+      <td class="num-cell balance-col">${fmt(totalBalancePcs)}</td>
+      <td class="num-cell balance-col">${fmt(avgBalancePrice)}</td>
+      <td class="num-cell balance-col">${fmt(totalBalanceAmount)}</td>
+    </tr>
+  `;
+  
+  tbody.insertAdjacentHTML("afterbegin", totalsRow);
+
+  const wrapper = document.querySelector('#tabAJMZ .table-wrapper');
+  ensureHorizontalSyncFor(wrapper);
+  adjustStickyPositions();
+}
+
+function renderCALIB(){
+  const search=document.getElementById("globalSearch").value.toLowerCase();
+  const txids=selects.calib_txid?.getValue()||[];
+  const parties=selects.calib_party?.getValue()||[];
+  const lots=selects.calib_lot?.getValue()||[];
+  const shapes=selects.calib_shape?.getValue()||[];
+  const sizes=selects.calib_size?.getValue()||[];
+  const grades=selects.calib_grade?.getValue()||[];
+  const dateFrom=document.getElementById("calib_filter_date_from").value;
+  const dateTo=document.getElementById("calib_filter_date_to").value;
+  
+  const showAdded=document.getElementById("calib_show_added").checked;
+  const showSell=document.getElementById("calib_show_sell").checked;
+
+  let filtered=CALIB_PARENTS.filter(p=>{
+    if(!matchesFilter(p.txId, txids)) return false;
+    if(parties.length > 0) {
+      const parentMatch = matchesFilter(p.party, parties);
+      const childMatch = p.__sells && p.__sells.some(s => matchesFilter(s.party, parties));
+      if(!parentMatch && !childMatch) return false;
+    }
+    if(!matchesFilter(p.lotName, lots)) return false;
+    if(!matchesFilter(p.shape, shapes)) return false;
+    if(!matchesFilter(p.size, sizes)) return false;
+    if(!matchesFilter(p.grade, grades)) return false;
+    if(search){const txt=JSON.stringify(p).toLowerCase();if(!txt.includes(search))return false;}
+    return true;
+  });
+
+  const tbody=document.getElementById("tbody_calib");
+  tbody.innerHTML="";
+
+  let totalOpeningCts = 0;
+  let totalOpeningAmount = 0;
+  let totalSoldCts = 0;
+  let totalSoldAmount = 0;
+  let totalBalanceCts = 0;
+  let totalBalanceAmount = 0;
+
+  let rowIndex = 1;
+
+  filtered.forEach(parent=>{
+    const sells=parent.__sells||[];
+    const soldC=sells.reduce((sum,s)=>sum+s.cts,0);
+    const soldA=sells.reduce((sum,s)=>sum+s.amount,0);
+
+    const totalC=parent.cts;
+    const totalA=totalC * parent.price;
+
+    const balC=totalC - soldC;
+    const balA=balC * parent.price;
+
+    totalOpeningCts += totalC;
+    totalOpeningAmount += totalA;
+    totalSoldCts += soldC;
+    totalSoldAmount += soldA;
+    totalBalanceCts += balC;
+    totalBalanceAmount += balA;
+
+    const avgSellPrice=soldC>0?soldA/soldC:0;
+
+    const parentDateMatch = (!dateFrom || parent.date >= dateFrom) && (!dateTo || parent.date <= dateTo);
+
+    if(showAdded && parentDateMatch){
+      tbody.insertAdjacentHTML("beforeend",`
+        <tr class="parent-row">
+          <td>${rowIndex}</td>
+          <td>${esc(parent.txId)}</td>
+          <td>${esc(parent.date)}</td>
+          <td>${esc(parent.party)}</td>
+          <td>${esc(parent.lotName||"")}</td>
+          <td>${esc(parent.grade||"")}</td>
+          <td>${esc(multiDisplay(parent.shape))}</td>
+          <td>${esc(multiDisplay(parent.size))}</td>
+          <td>${esc(parent.description||"")}</td>
+          <td class="num-cell section-col total-col">${fmt(totalC)}</td>
+          <td class="num-cell total-col">${fmt(parent.price)}</td>
+          <td class="num-cell total-col">${fmt(totalA)}</td>
+          <td class="num-cell section-col sold-col">${fmt(soldC)}</td>
+          <td class="num-cell sold-col">${fmt(avgSellPrice)}</td>
+          <td class="num-cell sold-col">${fmt(soldA)}</td>
+          <td class="num-cell section-col balance-col">${fmt(balC)}</td>
+          <td class="num-cell balance-col">${fmt(parent.price)}</td>
+          <td class="num-cell balance-col">${fmt(balA)}</td>
+        </tr>
+      `);
+      rowIndex++;
+    }
+
+    if(showSell){
+      sells.forEach(sell=>{
+        const sellDateMatch = (!dateFrom || sell.date >= dateFrom) && (!dateTo || sell.date <= dateTo);
+        if(sellDateMatch){
+          tbody.insertAdjacentHTML("beforeend",`
+            <tr class="child-row">
+              <td>${rowIndex}</td>
+              <td>${esc(sell.sellId||'')}</td>
+              <td>${esc(sell.date||'')}</td>
+              <td>${esc(sell.party||'')}</td>
+              <td>${esc(parent.lotName||"")}</td>
+              <td>${esc(parent.grade||"")}</td>
+              <td>${esc(multiDisplay(parent.shape))}</td>
+              <td>${esc(multiDisplay(parent.size))}</td>
+              <td>${esc(parent.description||"")}</td>
+              <td class="num-cell section-col total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell section-col sold-col">${fmt(sell.cts)}</td>
+              <td class="num-cell sold-col">${fmt(sell.price)}</td>
+              <td class="num-cell sold-col">${fmt(sell.amount)}</td>
+              <td class="num-cell section-col balance-col"></td>
+              <td class="num-cell balance-col"></td>
+              <td class="num-cell balance-col"></td>
+            </tr>
+          `);
+          rowIndex++;
+        }
+      });
+    }
+  });
+
+  const avgOpeningPrice = totalOpeningCts > 0 ? totalOpeningAmount / totalOpeningCts : 0;
+  const avgSoldPrice = totalSoldCts > 0 ? totalSoldAmount / totalSoldCts : 0;
+  const avgBalancePrice = totalBalanceCts > 0 ? totalBalanceAmount / totalBalanceCts : 0;
+
+  const totalsRow = `
+    <tr class="totals-row">
+      <td colspan="9" style="text-align:left;font-weight:700;font-size:14px;">📊 TOTALS</td>
+      <td class="num-cell section-col total-col">${fmt(totalOpeningCts)}</td>
+      <td class="num-cell total-col">${fmt(avgOpeningPrice)}</td>
+      <td class="num-cell total-col">${fmt(totalOpeningAmount)}</td>
+      <td class="num-cell section-col sold-col">${fmt(totalSoldCts)}</td>
+      <td class="num-cell sold-col">${fmt(avgSoldPrice)}</td>
+      <td class="num-cell sold-col">${fmt(totalSoldAmount)}</td>
+      <td class="num-cell section-col balance-col">${fmt(totalBalanceCts)}</td>
+      <td class="num-cell balance-col">${fmt(avgBalancePrice)}</td>
+      <td class="num-cell balance-col">${fmt(totalBalanceAmount)}</td>
+    </tr>
+  `;
+  
+  tbody.insertAdjacentHTML("afterbegin", totalsRow);
+
+  const wrapper = document.querySelector('#tabCALIB .table-wrapper');
+  ensureHorizontalSyncFor(wrapper);
+  adjustStickyPositions();
+}
+
+function renderALL(){
+  const search=document.getElementById("globalSearch").value.toLowerCase();
+  const txids=selects.all_txid?.getValue()||[];
+  const parties=selects.all_party?.getValue()||[];
+  const lots=selects.all_lot?.getValue()||[];
+  const shapes=selects.all_shape?.getValue()||[];
+  const sizes=selects.all_size?.getValue()||[];
+  const grades=selects.all_grade?.getValue()||[];
+  const dateFrom=document.getElementById("all_filter_date_from").value;
+  const dateTo=document.getElementById("all_filter_date_to").value;
+  
+  const showAdded=document.getElementById("all_show_added").checked;
+  const showSell=document.getElementById("all_show_sell").checked;
+
+  let combined=[...AJMZ_PARENTS,...CALIB_PARENTS];
+
+  let filtered=combined.filter(p=>{
+    if(!matchesFilter(p.txId, txids)) return false;
+    if(parties.length > 0) {
+      const parentMatch = matchesFilter(p.party, parties);
+      const childMatch = p.__sells && p.__sells.some(s => matchesFilter(s.party, parties));
+      if(!parentMatch && !childMatch) return false;
+    }
+    if(!matchesFilter(p.lotName, lots)) return false;
+    if(!matchesFilter(p.shape, shapes)) return false;
+    if(!matchesFilter(p.size, sizes)) return false;
+    if(!matchesFilter(p.grade, grades)) return false;
+    if(search){const txt=JSON.stringify(p).toLowerCase();if(!txt.includes(search))return false;}
+    return true;
+  });
+
+  const tbody=document.getElementById("tbody_all");
+  tbody.innerHTML="";
+
+  let totalOpeningCts = 0;
+  let totalOpeningAmount = 0;
+  let totalSoldCts = 0;
+  let totalSoldAmount = 0;
+  let totalBalanceCts = 0;
+  let totalBalanceAmount = 0;
+
+  let rowIndex = 1;
+
+  filtered.forEach(parent=>{
+    const sells=parent.__sells||[];
+    const soldC=sells.reduce((sum,s)=>sum+s.cts,0);
+    const soldA=sells.reduce((sum,s)=>sum+s.amount,0);
+
+    const totalC=parent.cts;
+    const totalA=totalC * parent.price;
+
+    const balC=totalC - soldC;
+    const balA=balC * parent.price;
+
+    totalOpeningCts += totalC;
+    totalOpeningAmount += totalA;
+    totalSoldCts += soldC;
+    totalSoldAmount += soldA;
+    totalBalanceCts += balC;
+    totalBalanceAmount += balA;
+
+    const avgSell=soldC>0?soldA/soldC:0;
+
+    const parentDateMatch = (!dateFrom || parent.date >= dateFrom) && (!dateTo || parent.date <= dateTo);
+
+    if(showAdded && parentDateMatch){
+      tbody.insertAdjacentHTML("beforeend",`
+        <tr class="parent-row">
+          <td>${rowIndex}</td>
+          <td>${esc(parent.txId)}</td>
+          <td>${esc(parent.date)}</td>
+          <td>${esc(parent.party)}</td>
+          <td>${esc(parent.lotName||"")}</td>
+          <td>${esc(multiDisplay(parent.shape))}</td>
+          <td>${esc(multiDisplay(parent.size))}</td>
+          <td>${esc(parent.description||"")}</td>
+          <td class="num-cell section-col total-col">${fmt(totalC)}</td>
+          <td class="num-cell total-col">${fmt(parent.price)}</td>
+          <td class="num-cell total-col">${fmt(totalA)}</td>
+          <td class="num-cell section-col sold-col">${fmt(soldC)}</td>
+          <td class="num-cell sold-col">${fmt(avgSell)}</td>
+          <td class="num-cell sold-col">${fmt(soldA)}</td>
+          <td class="num-cell section-col balance-col">${fmt(balC)}</td>
+          <td class="num-cell balance-col">${fmt(parent.price)}</td>
+          <td class="num-cell balance-col">${fmt(balA)}</td>
+        </tr>
+      `);
+      rowIndex++;
+    }
+
+    if(showSell){
+      sells.forEach(sell=>{
+        const sellDateMatch = (!dateFrom || sell.date >= dateFrom) && (!dateTo || sell.date <= dateTo);
+        if(sellDateMatch){
+          tbody.insertAdjacentHTML("beforeend",`
+            <tr class="child-row">
+              <td>${rowIndex}</td>
+              <td>${esc(sell.sellId||'')}</td>
+              <td>${esc(sell.date||'')}</td>
+              <td>${esc(sell.party||'')}</td>
+              <td>${esc(parent.lotName||"")}</td>
+              <td>${esc(multiDisplay(parent.shape))}</td>
+              <td>${esc(multiDisplay(parent.size))}</td>
+              <td>${esc(parent.description||"")}</td>
+              <td class="num-cell section-col total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell total-col"></td>
+              <td class="num-cell section-col sold-col">${fmt(sell.cts)}</td>
+              <td class="num-cell sold-col">${fmt(sell.price)}</td>
+              <td class="num-cell sold-col">${fmt(sell.amount)}</td>
+              <td class="num-cell section-col balance-col"></td>
+              <td class="num-cell balance-col"></td>
+              <td class="num-cell balance-col"></td>
+            </tr>
+          `);
+          rowIndex++;
+        }
+      });
+    }
+  });
+
+  const avgOpeningPrice = totalOpeningCts > 0 ? totalOpeningAmount / totalOpeningCts : 0;
+  const avgSoldPrice = totalSoldCts > 0 ? totalSoldAmount / totalSoldCts : 0;
+  const avgBalancePrice = totalBalanceCts > 0 ? totalBalanceAmount / totalBalanceCts : 0;
+
+  const totalsRow = `
+    <tr class="totals-row">
+      <td colspan="8" style="text-align:left;font-weight:700;font-size:14px;">📊 TOTALS</td>
+      <td class="num-cell section-col total-col">${fmt(totalOpeningCts)}</td>
+      <td class="num-cell total-col">${fmt(avgOpeningPrice)}</td>
+      <td class="num-cell total-col">${fmt(totalOpeningAmount)}</td>
+      <td class="num-cell section-col sold-col">${fmt(totalSoldCts)}</td>
+      <td class="num-cell sold-col">${fmt(avgSoldPrice)}</td>
+      <td class="num-cell sold-col">${fmt(totalSoldAmount)}</td>
+      <td class="num-cell section-col balance-col">${fmt(totalBalanceCts)}</td>
+      <td class="num-cell balance-col">${fmt(avgBalancePrice)}</td>
+      <td class="num-cell balance-col">${fmt(totalBalanceAmount)}</td>
+    </tr>
+  `;
+  
+  tbody.insertAdjacentHTML("afterbegin", totalsRow);
+
+  const wrapper = document.querySelector('#tabALL .table-wrapper');
+  ensureHorizontalSyncFor(wrapper);
+  adjustStickyPositions();
+}
+
+/* =====================================================
+   SUMMARY / PIVOT TABLE RENDER
+   - "shape+size" grouping now includes Lot (as requested)
+   - export for summary
+===================================================== */
+function renderSummary(){
+  const source = document.getElementById("summary_source").value;
+  const groupBy = document.getElementById("summary_groupby").value;
+  const dateFrom = document.getElementById("summary_filter_date_from").value;
+  const dateTo = document.getElementById("summary_filter_date_to").value;
+
+  let parents = [];
+  if(source === "AJMZ") parents = AJMZ_PARENTS;
+  else if(source === "CALIB") parents = CALIB_PARENTS;
+  else parents = [...AJMZ_PARENTS, ...CALIB_PARENTS];
+
+  if(dateFrom || dateTo){
+    parents = parents.filter(p => {
+      if(dateFrom && p.date < dateFrom) return false;
+      if(dateTo && p.date > dateTo) return false;
+      return true;
+    });
+  }
+
+  const groups = {};
+
+  parents.forEach(parent => {
+    let groupKey = "";
+
+    if(groupBy === "party") {
+      groupKey = parent.party || "(No Party)";
+      addToGroup(groupKey, parent);
+    } else if(groupBy === "lot") {
+      groupKey = parent.lotName || "(No Lot)";
+      addToGroup(groupKey, parent);
+    } else if(groupBy === "shape") {
+      const shapes = Array.isArray(parent.shape) ? parent.shape : [parent.shape];
+      shapes.forEach(s => addToGroup(s||"(No Shape)", parent));
+    } else if(groupBy === "size") {
+      const sizes = Array.isArray(parent.size) ? parent.size : [parent.size];
+      sizes.forEach(s => addToGroup(s||"(No Size)", parent));
+    } else if(groupBy === "grade") {
+      groupKey = parent.grade || "(No Grade)";
+      addToGroup(groupKey, parent);
+    } else if(groupBy === "party+lot") {
+      groupKey = `${parent.party || "(No Party)"} - ${parent.lotName || "(No Lot)"}`;
+      addToGroup(groupKey, parent);
+    } else if(groupBy === "shape+size") {
+      // modified: include Lot as requested: "Shape + Size + Lot"
+      const shapes = Array.isArray(parent.shape) ? parent.shape : [parent.shape];
+      const sizes = Array.isArray(parent.size) ? parent.size : [parent.size];
+      shapes.forEach(shape => {
+        sizes.forEach(size => {
+          const key = `${shape || "(No Shape)"} - ${size || "(No Size)"} - ${parent.lotName || "(No Lot)"}`;
+          addToGroup(key, parent);
+        });
+      });
+    } else {
+      // default group
+      groupKey = "(Other)";
+      addToGroup(groupKey, parent);
+    }
+  });
+
+  function addToGroup(key, parent) {
+    if(!groups[key]) {
+      groups[key] = {
+        openingCts: 0,
+        openingPcs: 0,
+        openingAmount: 0,
+        soldCts: 0,
+        soldPcs: 0,
+        soldAmount: 0,
+        balanceCts: 0,
+        balancePcs: 0,
+        balanceAmount: 0
+      };
+    }
+
+    const sells = parent.__sells || [];
+    const soldC = sells.reduce((sum, s) => sum + s.cts, 0);
+    const soldP = sells.reduce((sum, s) => sum + s.pcs, 0);
+    const soldA = sells.reduce((sum, s) => sum + s.amount, 0);
+
+    const totalC = parent.cts;
+    const totalP = parent.pcs || 0;
+    const totalA = totalC * parent.price;
+
+    const balC = totalC - soldC;
+    const balP = totalP - soldP;
+    const balA = balC * parent.price;
+
+    groups[key].openingCts += totalC;
+    groups[key].openingPcs += totalP;
+    groups[key].openingAmount += totalA;
+    groups[key].soldCts += soldC;
+    groups[key].soldPcs += soldP;
+    groups[key].soldAmount += soldA;
+    groups[key].balanceCts += balC;
+    groups[key].balancePcs += balP;
+    groups[key].balanceAmount += balA;
+  }
+
+  // Render table
+  const tbody = document.getElementById("tbody_summary");
+  tbody.innerHTML = "";
+
+  let grandOpeningCts = 0;
+  let grandOpeningPcs = 0;
+  let grandOpeningAmount = 0;
+  let grandSoldCts = 0;
+  let grandSoldPcs = 0;
+  let grandSoldAmount = 0;
+  let grandBalanceCts = 0;
+  let grandBalancePcs = 0;
+  let grandBalanceAmount = 0;
+
+  const sortedGroups = Object.keys(groups).sort();
+
+  sortedGroups.forEach(groupName => {
+    const g = groups[groupName];
+    const avgPrice = g.balanceCts > 0 ? g.balanceAmount / g.balanceCts : 0;
+
+    grandOpeningCts += g.openingCts;
+    grandOpeningPcs += g.openingPcs;
+    grandOpeningAmount += g.openingAmount;
+    grandSoldCts += g.soldCts;
+    grandSoldPcs += g.soldPcs;
+    grandSoldAmount += g.soldAmount;
+    grandBalanceCts += g.balanceCts;
+    grandBalancePcs += g.balancePcs;
+    grandBalanceAmount += g.balanceAmount;
+
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr class="summary-row">
+        <td style="font-weight:600;">${esc(groupName)}</td>
+        <td class="num-cell section-col total-col">${fmt(g.openingCts)}</td>
+        <td class="num-cell total-col">${fmt(g.openingPcs)}</td>
+        <td class="num-cell total-col">${fmt(g.openingAmount)}</td>
+        <td class="num-cell section-col sold-col">${fmt(g.soldCts)}</td>
+        <td class="num-cell sold-col">${fmt(g.soldPcs)}</td>
+        <td class="num-cell sold-col">${fmt(g.soldAmount)}</td>
+        <td class="num-cell section-col balance-col">${fmt(g.balanceCts)}</td>
+        <td class="num-cell balance-col">${fmt(g.balancePcs)}</td>
+        <td class="num-cell balance-col">${fmt(g.balanceAmount)}</td>
+        <td class="num-cell balance-col">${fmt(avgPrice)}</td>
+      </tr>
+    `);
+  });
+
+  const grandAvgPrice = grandBalanceCts > 0 ? grandBalanceAmount / grandBalanceCts : 0;
+
+  tbody.insertAdjacentHTML("afterbegin", `
+    <tr class="totals-row">
+      <td style="text-align:left;font-weight:700;font-size:14px;">📊 GRAND TOTAL</td>
+      <td class="num-cell section-col total-col">${fmt(grandOpeningCts)}</td>
+      <td class="num-cell total-col">${fmt(grandOpeningPcs)}</td>
+      <td class="num-cell total-col">${fmt(grandOpeningAmount)}</td>
+      <td class="num-cell section-col sold-col">${fmt(grandSoldCts)}</td>
+      <td class="num-cell sold-col">${fmt(grandSoldPcs)}</td>
+      <td class="num-cell sold-col">${fmt(grandSoldAmount)}</td>
+      <td class="num-cell section-col balance-col">${fmt(grandBalanceCts)}</td>
+      <td class="num-cell balance-col">${fmt(grandBalancePcs)}</td>
+      <td class="num-cell balance-col">${fmt(grandBalanceAmount)}</td>
+      <td class="num-cell balance-col">${fmt(grandAvgPrice)}</td>
+    </tr>
+  `);
+
+  // ensure top scrollbar sync exists and sticky positions
+  const wrapper = document.querySelector('#tabSUMMARY .table-wrapper');
+  ensureHorizontalSyncFor(wrapper);
+  adjustStickyPositions();
+}
+
+/* =====================================================
+   EXPORT TO CSV (for main tables and summary)
+===================================================== */
+function exportToCSV(type){
+  if(type === "SUMMARY"){
+    const table = document.querySelector("#summary_table");
+    if(!table) return;
+    let csv = [];
+    table.querySelectorAll("tr").forEach(row=>{
+      const cols = row.querySelectorAll("td, th");
+      const csvRow = [];
+      cols.forEach(col=>{
+        const text = col.textContent.replace(/"/g,'""');
+        csvRow.push('"'+text+'"');
+      });
+      csv.push(csvRow.join(","));
+    });
+    const blob = new Blob([csv.join("\n")], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Summary_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const table = type==="AJMZ"?document.querySelector("#tabAJMZ .ledger-table"):type==="CALIB"?document.querySelector("#tabCALIB .ledger-table"):document.querySelector("#tabALL .ledger-table");
+  if(!table) return;
+  let csv=[];
+  const rows=table.querySelectorAll("tr");
+  for(let row of rows){
+    let cols=row.querySelectorAll("td, th");
+    let csvRow=[];
+    for(let col of cols){
+      let text=col.textContent.replace(/"/g,'""');
+      csvRow.push('"'+text+'"');
+    }
+    csv.push(csvRow.join(","));
+  }
+  const blob=new Blob([csv.join("\n")],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`${type}_Ledger_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+/* =====================================================
+   RECALCULATE MODAL LOGIC (kept consistent with attached file)
+   ... (omitted here for brevity of comment)
+===================================================== */
+
+const modal = document.getElementById("recalcModal");
+const modalContainer = document.getElementById("modalTableContainer");
+const recalcTypeLabel = document.getElementById("recalcTypeLabel");
+const modalCloseBtn = document.getElementById("modalClose");
+const modalPrintBtn = document.getElementById("modalPrint");
+const modalExportBtn = document.getElementById("modalExport");
+const modalBulkInput = document.getElementById("modalBulkInput");
+const modalApplyAllBtn = document.getElementById("modalApplyAll");
+
+/* parse a bulk input value (fixed number or percentage string) and compute resulting price */
+function computeUpdatedPriceFromInput(val, basePrice){
+  if(!val) return 0;
+  const trimmed = String(val).trim();
+  if(trimmed.endsWith('%')){
+    const num = parseNum(trimmed.replace('%',''));
+    return basePrice * (1 + (num/100));
+  } else {
+    return parseNum(trimmed);
+  }
+}
+
+function openRecalcModal(type){
+  let data = [];
+  let title = "";
+  if(type === "AJMZ"){
+    title = "AJMZ";
+    const txids=selects.ajmz_txid?.getValue()||[];
+    const parties=selects.ajmz_party?.getValue()||[];
+    const lots=selects.ajmz_lot?.getValue()||[];
+    const shapes=selects.ajmz_shape?.getValue()||[];
+    const sizes=selects.ajmz_size?.getValue()||[];
+    const grades=selects.ajmz_grade?.getValue()||[];
+    const dateFrom=document.getElementById("ajmz_filter_date_from").value;
+    const dateTo=document.getElementById("ajmz_filter_date_to").value;
+    const showAdded=document.getElementById("ajmz_show_added").checked;
+    const showSell=document.getElementById("ajmz_show_sell").checked;
+    const search=document.getElementById("globalSearch").value.toLowerCase();
+
+    const filtered=AJMZ_PARENTS.filter(p=>{
+      if(!matchesFilter(p.txId, txids)) return false;
+      if(parties.length > 0) {
+        const parentMatch = matchesFilter(p.party, parties);
+        const childMatch = p.__sells && p.__sells.some(s => matchesFilter(s.party, parties));
+        if(!parentMatch && !childMatch) return false;
+      }
+      if(!matchesFilter(p.lotName, lots)) return false;
+      if(!matchesFilter(p.shape, shapes)) return false;
+      if(!matchesFilter(p.size, sizes)) return false;
+      if(!matchesFilter(p.grade, grades)) return false;
+      if(search){const txt=JSON.stringify(p).toLowerCase();if(!txt.includes(search))return false;}
+      return true;
+    });
+
+    data = { parents: filtered, type, showAdded, showSell, dateFrom, dateTo };
+  } else if(type === "CALIB"){
+    title = "CALIB";
+    const txids=selects.calib_txid?.getValue()||[];
+    const parties=selects.calib_party?.getValue()||[];
+    const lots=selects.calib_lot?.getValue()||[];
+    const shapes=selects.calib_shape?.getValue()||[];
+    const sizes=selects.calib_size?.getValue()||[];
+    const grades=selects.calib_grade?.getValue()||[];
+    const dateFrom=document.getElementById("calib_filter_date_from").value;
+    const dateTo=document.getElementById("calib_filter_date_to").value;
+    const showAdded=document.getElementById("calib_show_added").checked;
+    const showSell=document.getElementById("calib_show_sell").checked;
+    const search=document.getElementById("globalSearch").value.toLowerCase();
+
+    const filtered=CALIB_PARENTS.filter(p=>{
+      if(!matchesFilter(p.txId, txids)) return false;
+      if(parties.length > 0) {
+        const parentMatch = matchesFilter(p.party, parties);
+        const childMatch = p.__sells && p.__sells.some(s => matchesFilter(s.party, parties));
+        if(!parentMatch && !childMatch) return false;
+      }
+      if(!matchesFilter(p.lotName, lots)) return false;
+      if(!matchesFilter(p.shape, shapes)) return false;
+      if(!matchesFilter(p.size, sizes)) return false;
+      if(!matchesFilter(p.grade, grades)) return false;
+      if(search){const txt=JSON.stringify(p).toLowerCase();if(!txt.includes(search))return false;}
+      return true;
+    });
+
+    data = { parents: filtered, type, showAdded, showSell, dateFrom, dateTo };
+  } else if(type === "ALL"){
+    title = "ALL";
+    const txids=selects.all_txid?.getValue()||[];
+    const parties=selects.all_party?.getValue()||[];
+    const lots=selects.all_lot?.getValue()||[];
+    const shapes=selects.all_shape?.getValue()||[];
+    const sizes=selects.all_size?.getValue()||[];
+    const grades=selects.all_grade?.getValue()||[];
+    const dateFrom=document.getElementById("all_filter_date_from").value;
+    const dateTo=document.getElementById("all_filter_date_to").value;
+    const showAdded=document.getElementById("all_show_added").checked;
+    const showSell=document.getElementById("all_show_sell").checked;
+    const search=document.getElementById("globalSearch").value.toLowerCase();
+
+    const combined=[...AJMZ_PARENTS,...CALIB_PARENTS];
+
+    const filtered=combined.filter(p=>{
+      if(!matchesFilter(p.txId, txids)) return false;
+      if(parties.length > 0) {
+        const parentMatch = matchesFilter(p.party, parties);
+        const childMatch = p.__sells && p.__sells.some(s => matchesFilter(s.party, parties));
+        if(!parentMatch && !childMatch) return false;
+      }
+      if(!matchesFilter(p.lotName, lots)) return false;
+      if(!matchesFilter(p.shape, shapes)) return false;
+      if(!matchesFilter(p.size, sizes)) return false;
+      if(!matchesFilter(p.grade, grades)) return false;
+      if(search){const txt=JSON.stringify(p).toLowerCase();if(!txt.includes(search))return false;}
+      return true;
+    });
+
+    data = { parents: filtered, type, showAdded, showSell, dateFrom, dateTo };
+  } else {
+    return;
+  }
+
+  recalcTypeLabel.textContent = title;
+  buildModalTable(data);
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden','false');
+
+  setTimeout(()=> {
+    const wrapper = modal.querySelector('.modal-table-wrapper');
+    ensureHorizontalSyncFor(wrapper);
+    adjustStickyPositions();
+  }, 40);
+}
+
+/* Build modal table - identical to the version in attached file (kept intact) */
+function buildModalTable(context){
+  const parents = context.parents || [];
+  const type = context.type;
+  let headerHTML = '';
+  if(type === "AJMZ"){
+    headerHTML = `
+      <table class="ledger-table" id="modal_table">
+        <thead>
+          <tr>
+            <th rowspan="2">No.</th>
+            <th rowspan="2">Tx ID</th>
+            <th rowspan="2">Date</th>
+            <th rowspan="2">Party</th>
+            <th rowspan="2">Lot</th>
+            <th rowspan="2">Format</th>
+            <th rowspan="2">Shape</th>
+            <th rowspan="2">Size</th>
+            <th rowspan="2">Description</th>
+            <th colspan="4" class="section-header total-section modal-opening-section">OPENING BALANCE</th>
+            <th colspan="4" class="section-header sold-section modal-sold-section">SOLD</th>
+            <th colspan="8" class="section-header balance-section modal-final-section">AVAILABLE BALANCE</th>
+            <th colspan="4" class="section-header balance-section modal-print-col" style="display:none;">AVAILABLE BALANCE</th>
+          </tr>
+          <tr>
+            <th class="section-col total-col modal-opening-col">CTS</th>
+            <th class="total-col modal-opening-col">PCS</th>
+            <th class="total-col modal-opening-col">Price</th>
+            <th class="total-col modal-opening-col">Amount</th>
+
+            <th class="section-col sold-col modal-sold-col">CTS</th>
+            <th class="sold-col modal-sold-col">PCS</th>
+            <th class="sold-col modal-sold-col">Price</th>
+            <th class="sold-col modal-sold-col">Amount</th>
+
+            <th class="section-col balance-col modal-final-col">CTS</th>
+            <th class="balance-col modal-final-col">PCS</th>
+            <th class="balance-col modal-final-col">Price</th>
+            <th class="balance-col modal-final-col">Amount</th>
+
+            <th class="balance-col modal-updated-col">Updated Price</th>
+            <th class="balance-col modal-updated-col">Updated Amount</th>
+            <th class="balance-col modal-final-col">Final Price</th>
+            <th class="balance-col modal-final-col">Final Amount</th>
+
+            <th class="section-col balance-col modal-print-col" style="display:none;">CTS</th>
+            <th class="balance-col modal-print-col" style="display:none;">PCS</th>
+            <th class="balance-col modal-print-col" style="display:none;">Price</th>
+            <th class="balance-col modal-print-col" style="display:none;">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="modal_tbody"></tbody>
+      </table>
+    `;
+  } else if(type === "CALIB"){
+    headerHTML = `
+      <table class="ledger-table" id="modal_table">
+        <thead>
+          <tr>
+            <th rowspan="2">No.</th>
+            <th rowspan="2">Tx ID</th>
+            <th rowspan="2">Date</th>
+            <th rowspan="2">Party</th>
+            <th rowspan="2">Lot</th>
+            <th rowspan="2">Grade</th>
+            <th rowspan="2">Shape</th>
+            <th rowspan="2">Size</th>
+            <th rowspan="2">Description</th>
+            <th colspan="3" class="section-header total-section modal-opening-section">OPENING BALANCE</th>
+            <th colspan="3" class="section-header sold-section modal-sold-section">SOLD</th>
+            <th colspan="7" class="section-header balance-section modal-final-section">AVAILABLE BALANCE</th>
+            <th colspan="4" class="section-header balance-section modal-print-col" style="display:none;">AVAILABLE BALANCE</th>
+          </tr>
+          <tr>
+            <th class="section-col total-col modal-opening-col">CTS</th>
+            <th class="total-col modal-opening-col">Price</th>
+            <th class="total-col modal-opening-col">Amount</th>
+
+            <th class="section-col sold-col modal-sold-col">CTS</th>
+            <th class="sold-col modal-sold-col">Price</th>
+            <th class="sold-col modal-sold-col">Amount</th>
+
+            <th class="section-col balance-col modal-final-col">CTS</th>
+            <th class="balance-col modal-final-col">Price</th>
+            <th class="balance-col modal-final-col">Amount</th>
+
+            <th class="balance-col modal-updated-col">Updated Price</th>
+            <th class="balance-col modal-updated-col">Updated Amount</th>
+
+            <th class="balance-col modal-final-col">Final Price</th>
+            <th class="balance-col modal-final-col">Final Amount</th>
+
+            <th class="section-col balance-col modal-print-col" style="display:none;">CTS</th>
+            <th class="balance-col modal-print-col" style="display:none;">PCS</th>
+            <th class="balance-col modal-print-col" style="display:none;">Price</th>
+            <th class="balance-col modal-print-col" style="display:none;">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="modal_tbody"></tbody>
+      </table>
+    `;
+  } else {
+    headerHTML = `
+      <table class="ledger-table" id="modal_table">
+        <thead>
+          <tr>
+            <th rowspan="2">No.</th>
+            <th rowspan="2">Tx ID</th>
+            <th rowspan="2">Date</th>
+            <th rowspan="2">Party</th>
+            <th rowspan="2">Lot</th>
+            <th rowspan="2">Shape</th>
+            <th rowspan="2">Size</th>
+            <th rowspan="2">Description</th>
+            <th colspan="3" class="section-header total-section modal-opening-section">OPENING BALANCE</th>
+            <th colspan="3" class="section-header sold-section modal-sold-section">SOLD</th>
+            <th colspan="7" class="section-header balance-section modal-final-section">AVAILABLE BALANCE</th>
+            <th colspan="4" class="section-header balance-section modal-print-col" style="display:none;">AVAILABLE BALANCE</th>
+          </tr>
+          <tr>
+            <th class="section-col total-col modal-opening-col">CTS</th>
+            <th class="total-col modal-opening-col">Price</th>
+            <th class="total-col modal-opening-col">Amount</th>
+
+            <th class="section-col sold-col modal-sold-col">CTS</th>
+            <th class="sold-col modal-sold-col">Price</th>
+            <th class="sold-col modal-sold-col">Amount</th>
+
+            <th class="section-col balance-col modal-final-col">CTS</th>
+            <th class="balance-col modal-final-col">Price</th>
+            <th class="balance-col modal-final-col">Amount</th>
+
+            <th class="balance-col modal-updated-col">Updated Price</th>
+            <th class="balance-col modal-updated-col">Updated Amount</th>
+
+            <th class="balance-col modal-final-col">Final Price</th>
+            <th class="balance-col modal-final-col">Final Amount</th>
+
+            <th class="section-col balance-col modal-print-col" style="display:none;">CTS</th>
+            <th class="balance-col modal-print-col" style="display:none;">PCS</th>
+            <th class="balance-col modal-print-col" style="display:none;">Price</th>
+            <th class="balance-col modal-print-col" style="display:none;">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="modal_tbody"></tbody>
+      </table>
+    `;
+  }
+
+  modalContainer.innerHTML = headerHTML;
+
+  const tbody = document.getElementById('modal_tbody');
+
+  let totalOpeningCts = 0;
+  let totalOpeningPcs = 0;
+  let totalOpeningAmount = 0;
+  let totalSoldCts = 0;
+  let totalSoldPcs = 0;
+  let totalSoldAmount = 0;
+  let totalBalanceCts = 0;
+  let totalBalanceAmount = 0;
+
+  let rowIndex = 1;
+  parents.forEach(parent=>{
+    const sells=parent.__sells||[];
+    const soldC=sells.reduce((sum,s)=>sum+s.cts,0);
+    const soldP=sells.reduce((sum,s)=>sum+s.pcs,0);
+    const soldA=sells.reduce((sum,s)=>sum+s.amount,0);
+
+    const totalC=parent.cts;
+    const totalP=parent.pcs || "";
+    const totalA=totalC * parent.price;
+
+    const balC=totalC - soldC;
+    const balP=(totalP===""?"":(totalP - soldP));
+    const balPrice=parent.price;
+    const balA=balC * balPrice;
+
+    totalOpeningCts += totalC;
+    if(totalP!=="") totalOpeningPcs += Number(totalP)||0;
+    totalOpeningAmount += totalA;
+    totalSoldCts += soldC;
+    totalSoldPcs += soldP;
+    totalSoldAmount += soldA;
+    totalBalanceCts += balC;
+    totalBalanceAmount += balA;
+
+    const zeroClass = balC <= 0 ? ' zero-availability' : '';
+    
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr class="parent-row${zeroClass}" data-cts="${balC}" data-pcs="${balP}" data-balance-price="${balPrice}" data-row="${rowIndex}" data-type="${type}" data-parent-key="${esc(parent.key)}">
+        <td>${rowIndex}</td>
+        <td>${esc(parent.txId)}</td>
+        <td>${esc(parent.date)}</td>
+        <td>${esc(parent.party)}</td>
+        <td>${esc(parent.lotName||"")}</td>
+        ${type==="AJMZ" ? `<td>${esc(parent.lotFormat||"")}</td>` : ''}
+        ${type==="CALIB" ? `<td>${esc(parent.grade||"")}</td>` : ''}
+        <td>${esc(multiDisplay(parent.shape))}</td>
+        <td>${esc(multiDisplay(parent.size))}</td>
+        <td>${esc(parent.description||"")}</td>
+
+        <td class="num-cell section-col total-col modal-opening-col">${fmt(totalC)}</td>
+        ${type==="AJMZ" ? `<td class="num-cell total-col modal-opening-col">${fmt(totalP)}</td>` : ''}
+        <td class="num-cell total-col modal-opening-col">${fmt(parent.price)}</td>
+        <td class="num-cell total-col modal-opening-col">${fmt(totalA)}</td>
+
+        <td class="num-cell section-col sold-col modal-sold-col">${fmt(soldC)}</td>
+        ${type==="AJMZ" ? `<td class="num-cell sold-col modal-sold-col">${fmt(soldP)}</td>` : ''}
+        <td class="num-cell sold-col modal-sold-col">${fmt(soldA / (soldC || 1) * 1)}</td>
+        <td class="num-cell sold-col modal-sold-col">${fmt(soldA)}</td>
+
+        <td class="num-cell section-col balance-col modal-final-col">${fmt(balC)}</td>
+        ${type==="AJMZ" ? `<td class="num-cell balance-col modal-final-col">${fmt(balP)}</td>` : ''}
+        <td class="num-cell balance-col modal-final-col">${fmt(balPrice)}</td>
+        <td class="num-cell balance-col modal-final-col">${fmt(balA)}</td>
+
+        <td class="num-cell balance-col modal-updated-col">
+          <input type="text" class="updated-price-input" data-row="${rowIndex}" placeholder="e.g. 150 or 10%">
+          <div class="updated-price-display" id="updated_display_${rowIndex}"></div>
+        </td>
+        <td class="num-cell balance-col modal-updated-col" id="updated_amount_${rowIndex}"></td>
+
+        <td class="num-cell balance-col modal-final-col" id="final_price_${rowIndex}">${fmt(balPrice)}</td>
+        <td class="num-cell balance-col modal-final-col" id="final_amount_${rowIndex}">${fmt(balA)}</td>
+
+        <td class="num-cell section-col balance-col modal-print-col" style="display:none;" id="print_cts_${rowIndex}">${fmt(balC)}</td>
+        <td class="num-cell balance-col modal-print-col" style="display:none;" id="print_pcs_${rowIndex}">${type==="AJMZ" ? fmt(balP) : ''}</td>
+        <td class="num-cell balance-col modal-print-col" style="display:none;" id="print_price_${rowIndex}">${fmt(balPrice)}</td>
+        <td class="num-cell balance-col modal-print-col" style="display:none;" id="print_amount_${rowIndex}">${fmt(balA)}</td>
+      </tr>
+    `);
+
+    rowIndex++;
+  });
+
+  const avgOpeningPrice = totalOpeningCts > 0 ? totalOpeningAmount / totalOpeningCts : 0;
+  const avgSoldPrice = totalSoldCts > 0 ? totalSoldAmount / totalSoldCts : 0;
+  const avgBalancePrice = totalBalanceCts > 0 ? totalBalanceAmount / totalBalanceCts : 0;
+
+  let nonNumericCols = 9;
+  if(type==="ALL") nonNumericCols = 8;
+  if(type==="CALIB") nonNumericCols = 9;
+  if(type==="AJMZ") nonNumericCols = 9;
+
+  const totalsRow = `
+    <tr class="totals-row">
+      <td colspan="${nonNumericCols}" style="text-align:left;font-weight:700;font-size:14px;">📊 TOTALS</td>
+
+      <td class="num-cell section-col total-col modal-opening-col">${fmt(totalOpeningCts)}</td>
+      ${type==="AJMZ"?`<td class="num-cell total-col modal-opening-col">${fmt(totalOpeningPcs)}</td>`:``}
+      <td class="num-cell total-col modal-opening-col">${fmt(avgOpeningPrice)}</td>
+      <td class="num-cell total-col modal-opening-col">${fmt(totalOpeningAmount)}</td>
+
+      <td class="num-cell section-col sold-col modal-sold-col">${fmt(totalSoldCts)}</td>
+      ${type==="AJMZ"?`<td class="num-cell sold-col modal-sold-col">${fmt(totalSoldPcs)}</td>`:``}
+      <td class="num-cell sold-col modal-sold-col">${fmt(avgSoldPrice)}</td>
+      <td class="num-cell sold-col modal-sold-col">${fmt(totalSoldAmount)}</td>
+
+      <td class="num-cell section-col balance-col modal-final-col">${fmt(totalBalanceCts)}</td>
+      ${type==="AJMZ"?`<td class="num-cell balance-col modal-final-col"></td>`:``}
+      <td class="num-cell balance-col modal-final-col">${fmt(avgBalancePrice)}</td>
+      <td class="num-cell balance-col modal-final-col">${fmt(totalBalanceAmount)}</td>
+
+      <td class="num-cell balance-col modal-updated-col"></td>
+      <td class="num-cell balance-col modal-updated-col" id="modal_total_updated_amount"></td>
+
+      <td class="num-cell balance-col modal-final-col"></td>
+      <td class="num-cell balance-col modal-final-col" id="modal_total_final_amount"></td>
+
+      <td class="num-cell section-col balance-col modal-print-col" style="display:none;" id="print_total_cts">${fmt(totalBalanceCts)}</td>
+      <td class="num-cell balance-col modal-print-col" style="display:none;" id="print_total_pcs">${type==="AJMZ"?fmt(totalOpeningPcs - totalSoldPcs):''}</td>
+      <td class="num-cell balance-col modal-print-col" style="display:none;" id="print_total_price"></td>
+      <td class="num-cell balance-col modal-print-col" style="display:none;" id="print_total_amount">${fmt(totalBalanceAmount)}</td>
+    </tr>
+  `;
+
+  const tbodyElem = document.getElementById('modal_tbody');
+  if(tbodyElem) tbodyElem.insertAdjacentHTML('afterbegin', totalsRow);
+
+  modalContainer.querySelectorAll('.updated-price-input').forEach(input=>{
+    input.addEventListener('input', (e)=>{
+      const row = input.dataset.row;
+      const rowTr = modalContainer.querySelector(`tr[data-row="${row}"]`);
+      if(!rowTr) return;
+      const balC = parseNum(rowTr.getAttribute('data-cts') || 0);
+      const balPrice = parseNum(rowTr.getAttribute('data-balance-price') || 0);
+
+      const val = input.value.trim();
+      let computedUpdatedPrice = 0;
+      let computedUpdatedAmount = 0;
+
+      if(val === "") {
+        computedUpdatedPrice = 0;
+        computedUpdatedAmount = 0;
+      } else if(val.endsWith('%')){
+        const p = parseNum(val.replace('%',''));
+        computedUpdatedPrice = balPrice * (1 + (p/100));
+        computedUpdatedAmount = computedUpdatedPrice * balC;
+      } else {
+        const fixed = parseNum(val);
+        computedUpdatedPrice = fixed;
+        computedUpdatedAmount = computedUpdatedPrice * balC;
+      }
+
+      const displayEl = document.getElementById(`updated_display_${row}`);
+      const amountEl = document.getElementById(`updated_amount_${row}`);
+      const finalPriceEl = document.getElementById(`final_price_${row}`);
+      const finalAmountEl = document.getElementById(`final_amount_${row}`);
+
+      if(displayEl) displayEl.textContent = computedUpdatedPrice ? fmt(computedUpdatedPrice) : "";
+      if(amountEl) amountEl.textContent = computedUpdatedAmount ? fmt(computedUpdatedAmount) : "";
+      if(finalPriceEl) finalPriceEl.textContent = computedUpdatedPrice ? fmt(computedUpdatedPrice) : fmt(balPrice);
+      if(finalAmountEl) finalAmountEl.textContent = computedUpdatedAmount ? fmt(computedUpdatedAmount) : fmt(balPrice * balC);
+
+      const printPriceEl = document.getElementById(`print_price_${row}`);
+      const printAmountEl = document.getElementById(`print_amount_${row}`);
+      if(printPriceEl) printPriceEl.textContent = computedUpdatedPrice ? fmt(computedUpdatedPrice) : fmt(balPrice);
+      if(printAmountEl) printAmountEl.textContent = computedUpdatedAmount ? fmt(computedUpdatedAmount) : fmt(balPrice * balC);
+
+      recomputeModalTotals();
+    });
+
+    input.addEventListener('blur', ()=>{
+      input.value = input.value.trim();
+      input.dispatchEvent(new Event('input'));
+      saveStateDebounced();
+    });
+  });
+
+  modalContainer.querySelectorAll('tr.parent-row').forEach(tr=>{
+    const row = tr.getAttribute('data-row');
+    const finalPriceEl = document.getElementById(`final_price_${row}`);
+    const finalAmountEl = document.getElementById(`final_amount_${row}`);
+    const balC = parseNum(tr.getAttribute('data-cts') || 0);
+    const balPrice = parseNum(tr.getAttribute('data-balance-price') || 0);
+    if(finalPriceEl) finalPriceEl.textContent = fmt(balPrice);
+    if(finalAmountEl) finalAmountEl.textContent = fmt(balPrice * balC);
+  });
+
+  recomputeModalTotals();
+
+  setTimeout(()=>{
+    const wrapper = modal.querySelector('.modal-table-wrapper');
+    ensureHorizontalSyncFor(wrapper);
+    adjustStickyPositions();
+  }, 40);
+}
+
+function recomputeModalTotals(){
+  const amountCells = modalContainer.querySelectorAll('[id^="updated_amount_"]');
+  let sumUpdated = 0;
+  amountCells.forEach(cell=>{
+    const txt = cell.textContent.trim();
+    const num = parseNum(txt);
+    sumUpdated += num;
+  });
+  const totalEl = document.getElementById('modal_total_updated_amount');
+  if(totalEl) totalEl.textContent = fmt(sumUpdated);
+
+  let sumFinal = 0;
+  modalContainer.querySelectorAll('[id^="final_amount_"]').forEach(cell=>{
+    sumFinal += parseNum(cell.textContent.trim());
+  });
+  const totalFinalEl = document.getElementById('modal_total_final_amount');
+  if(totalFinalEl) totalFinalEl.textContent = fmt(sumFinal);
+
+  const printTotalAmountEl = document.getElementById('print_total_amount');
+  if(printTotalAmountEl) printTotalAmountEl.textContent = fmt(sumFinal);
+}
+
+/* modal: exclude zero handler */
+const modalExcludeZero = document.getElementById('modalExcludeZero');
+modalExcludeZero.addEventListener('change', ()=>{
+  const excludeZero = modalExcludeZero.checked;
+  modalContainer.querySelectorAll('tr.parent-row').forEach(row=>{
+    const cts = parseNum(row.getAttribute('data-cts') || 0);
+    if(excludeZero && cts <= 0) {
+      row.classList.add('zero-availability');
+      row.style.display = 'none';
+    } else {
+      row.classList.remove('zero-availability');
+      row.style.display = '';
+    }
+  });
+  saveStateDebounced();
+});
+
+/* Bulk apply */
+modalApplyAllBtn.addEventListener('click', ()=>{
+  const val = modalBulkInput.value.trim();
+  if(!val) return;
+  modalContainer.querySelectorAll('.updated-price-input').forEach(input=>{
+    input.value = val;
+    input.dispatchEvent(new Event('input'));
+  });
+  saveStateDebounced();
+});
+
+/* Export modal CSV (customer format) - kept as before */
+modalExportBtn.addEventListener('click', ()=>{
+  const table = document.getElementById('modal_table');
+  if(!table) return;
+  const modalType = recalcTypeLabel.textContent.trim();
+  const isAJMZ = modalType === "AJMZ";
+  const excludeZero = modalExcludeZero.checked;
+
+  let csv = [];
+  let totalCts = 0;
+  let totalPcs = 0;
+  let totalFinalAmount = 0;
+
+  const parentRows = table.querySelectorAll('tbody tr.parent-row');
+  const visibleRows = [];
+
+  parentRows.forEach(row => {
+    const cts = parseNum(row.getAttribute('data-cts') || 0);
+    if(excludeZero && cts <= 0) return;
+    visibleRows.push(row);
+    const rowNum = row.getAttribute('data-row');
+    const pcs = parseNum(row.getAttribute('data-pcs') || 0);
+
+    totalCts += cts;
+    if(isAJMZ) totalPcs += pcs;
+    const finalAmountEl = document.getElementById(`final_amount_${rowNum}`);
+    if(finalAmountEl) totalFinalAmount += parseNum(finalAmountEl.textContent);
+  });
+
+  if(isAJMZ) csv.push('For Customer Print,,,,,,,,,AVAILABLE BALANCE,,,');
+  else csv.push('For Customer Print,,,,,,,,AVAILABLE BALANCE,,,');
+
+  if(isAJMZ) csv.push(',,,,,,,,,CTS,PCS,Price,Amount');
+  else csv.push(',,,,,,,,CTS,PCS,Price,Amount');
+
+  if(isAJMZ) csv.push(`No.,Tx ID,Date,Party,Lot,Format,Shape,Size,Description,"${fmt(totalCts)}","${fmt(totalPcs)}",,"${fmt(totalFinalAmount)}"`);
+  else csv.push(`No.,Tx ID,Date,Party,Lot,Shape,Size,Description,"${fmt(totalCts)}","${fmt(totalPcs)}",,"${fmt(totalFinalAmount)}"`);
+
+  let rowIndex = 1;
+  visibleRows.forEach(row => {
+    const rowNum = row.getAttribute('data-row');
+    const cells = row.querySelectorAll('td');
+    const txId = cells[1]?.textContent.trim() || '';
+    const date = cells[2]?.textContent.trim() || '';
+    const party = cells[3]?.textContent.trim() || '';
+    const lot = cells[4]?.textContent.trim() || '';
+    let format = '';
+    let shape = '';
+    let size = '';
+    let description = '';
+
+    if(isAJMZ) {
+      format = cells[5]?.textContent.trim() || '';
+      shape = cells[6]?.textContent.trim() || '';
+      size = cells[7]?.textContent.trim() || '';
+      description = cells[8]?.textContent.trim() || '';
+    } else {
+      shape = cells[5]?.textContent.trim() || '';
+      size = cells[6]?.textContent.trim() || '';
+      description = cells[7]?.textContent.trim() || '';
+    }
+
+    const cts = parseNum(row.getAttribute('data-cts') || 0);
+    const pcs = row.getAttribute('data-pcs') || '';
+
+    const finalPriceEl = document.getElementById(`final_price_${rowNum}`);
+    const finalAmountEl = document.getElementById(`final_amount_${rowNum}`);
+
+    const finalPrice = finalPriceEl?.textContent.trim() || '';
+    const finalAmount = finalAmountEl?.textContent.trim() || '';
+
+    let csvRow;
+    if(isAJMZ) {
+      csvRow = `${rowIndex},${txId},${date},${party},${lot},${format},${shape},${size},${description},"${fmt(cts)}","${pcs}","${finalPrice}","${finalAmount}"`;
+    } else {
+      csvRow = `${rowIndex},${txId},${date},${party},${lot},${shape},${size},${description},"${fmt(cts)}",,"${finalPrice}","${finalAmount}"`;
+    }
+
+    csv.push(csvRow);
+    rowIndex++;
+  });
+
+  const blob = new Blob([csv.join("\n")], {type: "text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Recalculate_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* Modal print - kept behavior as in attached file */
+modalPrintBtn.addEventListener('click', ()=>{
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const modalType = recalcTypeLabel.textContent.trim();
+  const typeEmoji = modalType === 'AJMZ' ? '💎' : modalType === 'CALIB' ? '📏' : '🌐';
+
+  const printTitleEl = document.getElementById('printModalTitle');
+  const printSubtitleEl = document.getElementById('printModalSubtitle');
+  const printDateEl = document.getElementById('printDateDisplay');
+
+  if(printTitleEl) printTitleEl.textContent = `${typeEmoji} ${modalType} AVAILABLE BALANCE`;
+  if(printSubtitleEl) printSubtitleEl.textContent = 'Customer Recalculation Sheet • Updated Pricing';
+  if(printDateEl) printDateEl.textContent = `Generated: ${dateStr}`;
+
+  document.querySelectorAll('.tab-section').forEach(section => section.setAttribute('data-print-date', dateStr));
+  document.body.classList.add('printing-modal');
+  window.print();
+  setTimeout(()=> document.body.classList.remove('printing-modal'), 500);
+});
+
+/* When print starts globally, populate print headers and set dates */
+window.addEventListener('beforeprint', function() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  document.querySelectorAll('.tab-section').forEach(section => section.setAttribute('data-print-date', dateStr));
+
+  function getFilterSummary(prefix) {
+    const filters = [];
+    const dateFrom = document.getElementById(`${prefix}_filter_date_from`)?.value;
+    const dateTo = document.getElementById(`${prefix}_filter_date_to`)?.value;
+    if (dateFrom || dateTo) {
+      filters.push(`Date: ${dateFrom || 'Start'} to ${dateTo || 'End'}`);
+    }
+    ['txid', 'party', 'lot', 'shape', 'size', 'grade'].forEach(filter => {
+      const selectObj = selects[`${prefix}_${filter}`];
+      if (selectObj) {
+        const vals = selectObj.getValue();
+        if (vals && vals.length > 0) {
+          const label = filter.charAt(0).toUpperCase() + filter.slice(1);
+          filters.push(`${label}: ${vals.slice(0, 3).join(', ')}${vals.length > 3 ? '...' : ''}`);
+        }
+      }
+    });
+    return filters.length > 0 ? `Filters: ${filters.join(' | ')}` : 'Showing all records';
+  }
+
+  const printDateAJMZ = document.getElementById('printDateAJMZ');
+  const printFiltersAJMZ = document.getElementById('printFiltersAJMZ');
+  if (printDateAJMZ) printDateAJMZ.textContent = `Generated: ${dateStr}`;
+  if (printFiltersAJMZ) printFiltersAJMZ.textContent = getFilterSummary('ajmz');
+
+  const printDateCALIB = document.getElementById('printDateCALIB');
+  const printFiltersCALIB = document.getElementById('printFiltersCALIB');
+  if (printDateCALIB) printDateCALIB.textContent = `Generated: ${dateStr}`;
+  if (printFiltersCALIB) printFiltersCALIB.textContent = getFilterSummary('calib');
+
+  const printDateALL = document.getElementById('printDateALL');
+  const printFiltersALL = document.getElementById('printFiltersALL');
+  if (printDateALL) printDateALL.textContent = `Generated: ${dateStr}`;
+  if (printFiltersALL) printFiltersALL.textContent = getFilterSummary('all');
+
+  // For summary, optionally annotate printed filters (if needed)
+});
+
+/* Close modal */
+modalCloseBtn.addEventListener('click', ()=>{
+  modal.classList.remove('active');
+  modal.setAttribute('aria-hidden','true');
+});
+
+/* Close modal on overlay click */
+modal.addEventListener('click', (e)=>{
+  if(e.target === modal){
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden','true');
+  }
+});
+
+/* =====================================================
+   Initial bindings and UI wiring, plus persistence hooks
+===================================================== */
+document.addEventListener("DOMContentLoaded",async()=>{
+  await loadData();
+
+  // Ensure horizontal sync for main wrappers
+  document.querySelectorAll('.table-wrapper').forEach(wrap => ensureHorizontalSyncFor(wrap));
+
+  // Toggle visibility for each section with persistent save
+  const toggleSections=(prefix)=>{
+    const table=document.querySelector(`#tab${prefix.toUpperCase()} .ledger-table`);
+    const elTotal = document.getElementById(`${prefix}_toggle_total`);
+    const elSold = document.getElementById(`${prefix}_toggle_sold`);
+    const elBalance = document.getElementById(`${prefix}_toggle_balance`);
+
+    if(elTotal){
+      elTotal.addEventListener("click",()=>{
+        const icon=document.querySelector(`#${prefix}_toggle_total .section-toggle-icon`);
+        icon.classList.toggle("collapsed");
+        table.classList.toggle("section-hidden-total");
+        saveStateDebounced();
+      });
+    }
+    if(elSold){
+      elSold.addEventListener("click",()=>{
+        const icon=document.querySelector(`#${prefix}_toggle_sold .section-toggle-icon`);
+        icon.classList.toggle("collapsed");
+        table.classList.toggle("section-hidden-sold");
+        saveStateDebounced();
+      });
+    }
+    if(elBalance){
+      elBalance.addEventListener("click",()=>{
+        const icon=document.querySelector(`#${prefix}_toggle_balance .section-toggle-icon`);
+        icon.classList.toggle("collapsed");
+        table.classList.toggle("section-hidden-balance");
+        saveStateDebounced();
+      });
+    }
+  };
+
+  toggleSections("ajmz");
+  toggleSections("calib");
+  toggleSections("all");
+
+  // Tabs: activate and save
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      const target=btn.dataset.tab;
+      document.querySelectorAll(".tab-section").forEach(sec=>sec.classList.remove("active"));
+      document.getElementById(target).classList.add("active");
+      // render for the activated tab (ensures up-to-date)
+      if(target==="tabAJMZ") renderAJMZ();
+      if(target==="tabCALIB") renderCALIB();
+      if(target==="tabALL") renderALL();
+      if(target==="tabSUMMARY") renderSummary();
+      saveStateDebounced();
+    });
+  });
+
+  // Global Search
+  document.getElementById("globalSearch").addEventListener("input",()=>{
+    renderAJMZ();renderCALIB();renderALL(); renderSummary();
+    saveStateDebounced();
+  });
+
+  // Helper to attach handlers for filter wrappers (they dispatch 'change')
+  const attachSelectWrapperHandlers = (id, renderFn) => {
+    const wrapper = document.getElementById(id);
+    if(wrapper){
+      wrapper.addEventListener('change', ()=>{
+        if(renderFn) renderFn();
+        saveStateDebounced();
+      });
+    }
+  };
+
+  // AJMZ filters and buttons (now call save on UI changes)
+  attachSelectWrapperHandlers("ajmz_filter_txid", renderAJMZ);
+  attachSelectWrapperHandlers("ajmz_filter_party", renderAJMZ);
+  attachSelectWrapperHandlers("ajmz_filter_lot", renderAJMZ);
+  attachSelectWrapperHandlers("ajmz_filter_shape", renderAJMZ);
+  attachSelectWrapperHandlers("ajmz_filter_size", renderAJMZ);
+  attachSelectWrapperHandlers("ajmz_filter_grade", renderAJMZ);
+
+  ['ajmz_filter_date_from','ajmz_filter_date_to'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change', ()=>{ renderAJMZ(); saveStateDebounced(); });
+  });
+  ['ajmz_show_added','ajmz_show_sell'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change', ()=>{ renderAJMZ(); saveStateDebounced(); });
+  });
+
+  document.getElementById("ajmz_clear").addEventListener("click",()=>{
+    selects.ajmz_txid?.reset();
+    selects.ajmz_party?.reset();
+    selects.ajmz_lot?.reset();
+    selects.ajmz_shape?.reset();
+    selects.ajmz_size?.reset();
+    selects.ajmz_grade?.reset();
+    document.getElementById("ajmz_filter_date_from").value="";
+    document.getElementById("ajmz_filter_date_to").value="";
+    document.getElementById("ajmz_show_added").checked=true;
+    document.getElementById("ajmz_show_sell").checked=true;
+    document.getElementById("globalSearch").value="";
+    renderAJMZ();
+    saveStateDebounced();
+  });
+  document.getElementById("ajmz_print").addEventListener("click",()=>window.print());
+  document.getElementById("ajmz_export").addEventListener("click",()=>exportToCSV("AJMZ"));
+  document.getElementById("ajmz_recalc").addEventListener("click",()=>openRecalcModal("AJMZ"));
+
+  // CALIB filters and buttons
+  attachSelectWrapperHandlers("calib_filter_txid", renderCALIB);
+  attachSelectWrapperHandlers("calib_filter_party", renderCALIB);
+  attachSelectWrapperHandlers("calib_filter_lot", renderCALIB);
+  attachSelectWrapperHandlers("calib_filter_shape", renderCALIB);
+  attachSelectWrapperHandlers("calib_filter_size", renderCALIB);
+  attachSelectWrapperHandlers("calib_filter_grade", renderCALIB);
+
+  ['calib_filter_date_from','calib_filter_date_to'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change', ()=>{ renderCALIB(); saveStateDebounced(); });
+  });
+  ['calib_show_added','calib_show_sell'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change', ()=>{ renderCALIB(); saveStateDebounced(); });
+  });
+
+  document.getElementById("calib_clear").addEventListener("click",()=>{
+    selects.calib_txid?.reset();
+    selects.calib_party?.reset();
+    selects.calib_lot?.reset();
+    selects.calib_shape?.reset();
+    selects.calib_size?.reset();
+    selects.calib_grade?.reset();
+    document.getElementById("calib_filter_date_from").value="";
+    document.getElementById("calib_filter_date_to").value="";
+    document.getElementById("calib_show_added").checked=true;
+    document.getElementById("calib_show_sell").checked=true;
+    document.getElementById("globalSearch").value="";
+    renderCALIB();
+    saveStateDebounced();
+  });
+  document.getElementById("calib_print").addEventListener("click",()=>window.print());
+  document.getElementById("calib_export").addEventListener("click",()=>exportToCSV("CALIB"));
+  document.getElementById("calib_recalc").addEventListener("click",()=>openRecalcModal("CALIB"));
+
+  // ALL filters and buttons
+  attachSelectWrapperHandlers("all_filter_txid", renderALL);
+  attachSelectWrapperHandlers("all_filter_party", renderALL);
+  attachSelectWrapperHandlers("all_filter_lot", renderALL);
+  attachSelectWrapperHandlers("all_filter_shape", renderALL);
+  attachSelectWrapperHandlers("all_filter_size", renderALL);
+  attachSelectWrapperHandlers("all_filter_grade", renderALL);
+
+  ['all_filter_date_from','all_filter_date_to'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change', ()=>{ renderALL(); saveStateDebounced(); });
+  });
+  ['all_show_added','all_show_sell'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change', ()=>{ renderALL(); saveStateDebounced(); });
+  });
+
+  document.getElementById("all_clear").addEventListener("click",()=>{
+    selects.all_txid?.reset();
+    selects.all_party?.reset();
+    selects.all_lot?.reset();
+    selects.all_shape?.reset();
+    selects.all_size?.reset();
+    selects.all_grade?.reset();
+    document.getElementById("all_filter_date_from").value="";
+    document.getElementById("all_filter_date_to").value="";
+    document.getElementById("all_show_added").checked=true;
+    document.getElementById("all_show_sell").checked=true;
+    document.getElementById("globalSearch").value="";
+    renderALL();
+    saveStateDebounced();
+  });
+  document.getElementById("all_print").addEventListener("click",()=>window.print());
+  document.getElementById("all_export").addEventListener("click",()=>exportToCSV("ALL"));
+  document.getElementById("all_recalc").addEventListener("click",()=>openRecalcModal("ALL"));
+
+  // Summary controls
+  document.getElementById("summary_source").addEventListener("change", ()=>{ renderSummary(); saveStateDebounced(); });
+  document.getElementById("summary_groupby").addEventListener("change", ()=>{ renderSummary(); saveStateDebounced(); });
+  document.getElementById("summary_filter_date_from").addEventListener("change", ()=>{ renderSummary(); saveStateDebounced(); });
+  document.getElementById("summary_filter_date_to").addEventListener("change", ()=>{ renderSummary(); saveStateDebounced(); });
+  document.getElementById("summary_refresh").addEventListener("click", ()=>{ renderSummary(); saveStateDebounced(); });
+  document.getElementById("summary_print").addEventListener("click", ()=>window.print());
+  document.getElementById("summary_export").addEventListener("click", ()=>exportToCSV("SUMMARY"));
+
+  // Recompute sticky positions on resize
+  window.addEventListener('resize', ()=>{
+    document.querySelectorAll('.table-wrapper').forEach(wrap => {
+      const h = wrap.querySelector('.h-scroll');
+      const table = wrap.querySelector('.ledger-table');
+      if(h && table){
+        const inner = h.querySelector('.h-inner');
+        if(inner) inner.style.width = table.scrollWidth + 'px';
+      }
+    });
+    adjustStickyPositions();
+  });
+
+  // initial save of current state (ensures storage seed)
+  saveStateDebounced();
+});
+</script>
+
+</body>
+</html>

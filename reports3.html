@@ -1,0 +1,2287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INVOICE — Inventory System</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --bg:#F5F5F0;
+  --card:#ffffff;
+  --line:#d6cbb8;
+  --ink:#2f3b33;
+  --ink-soft:#6b7a70;
+  --accent:#5D866C;
+  --accent-2:#C2A68C;
+  --shadow:rgba(0,0,0,0.08);
+  --yellow-highlight:#FFF9E6;
+  --border-dark:#333;
+}
+
+/* Left fixed nav */
+.nav-vertical{
+  width:60px;
+  background:#fff;
+  border-right:3px solid var(--accent-2);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  padding:14px 0;
+  box-shadow:6px 0 20px var(--shadow);
+  position:fixed;
+  left:0; top:0; bottom:0;
+  z-index:2000;
+}
+.nav-item{
+  width:44px; height:44px;
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+  text-decoration:none;
+  color:var(--ink);
+  background:#fff;
+  border:1px solid var(--line);
+  cursor:pointer;
+  font-weight:600;
+  transition:.15s;
+}
+.nav-item:hover{background:#faf8f0}
+.nav-item.active{
+  background:var(--accent);
+  color:#fff;
+  border-color:transparent;
+}
+
+/* Workspace */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:Inter, sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
+.workspace{
+  margin-left:60px;
+  min-height:100vh;
+  padding:18px;
+  overflow:auto;
+  transition:filter .18s ease;
+}
+
+/* When modal active blur the workspace */
+.modal-active .workspace{
+  filter: blur(4px) brightness(.9);
+  pointer-events: none;
+}
+
+/* Invoice Container */
+.invoice-container{
+  max-width:1200px;
+  margin:0 auto;
+  background:#fff;
+  border:2px solid var(--border-dark);
+  border-radius:12px;
+  box-shadow:0 8px 32px var(--shadow);
+  padding:30px;
+}
+
+/* INVOICE Title */
+.invoice-title{
+  text-align:center;
+  font-size:36px;
+  font-weight:700;
+  margin-bottom:25px;
+  color:var(--ink);
+  text-transform:uppercase;
+  letter-spacing:3px;
+  border-bottom:3px solid var(--border-dark);
+  padding-bottom:15px;
+}
+
+/* Header Fields - Clean Format */
+.header-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:12px 30px;
+  margin-bottom:25px;
+  padding-bottom:20px;
+  border-bottom:2px solid #e0e0e0;
+}
+
+.field-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  font-size:13px;
+}
+
+.field-label{
+  font-weight:700;
+  font-size:11px;
+  color:var(--ink);
+  min-width:130px;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+
+.field-value{
+  color:var(--ink);
+  font-weight:600;
+  flex:1;
+  font-size:13px;
+}
+
+.field-value input,
+.field-value select{
+  border:none;
+  border-bottom:1px dashed #ccc;
+  padding:4px 0;
+  font-size:13px;
+  font-weight:600;
+  background:transparent;
+  color:var(--ink);
+  width:100%;
+  font-family:Inter, sans-serif;
+}
+
+.field-value input:focus,
+.field-value select:focus{
+  outline:none;
+  border-bottom:1px solid var(--accent);
+  background:#fafafa;
+}
+
+.field-value input[readonly]{
+  border-bottom:1px solid #e0e0e0;
+  color:var(--ink-soft);
+  cursor:default;
+}
+
+/* Commission controls */
+.commission-control{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.commission-sign{
+  min-width:70px;
+  max-width:90px;
+  padding:6px 8px;
+  border:2px solid var(--border-dark);
+  border-radius:6px;
+  background:#fff;
+  font-weight:700;
+  text-align:center;
+}
+.commission-input{
+  flex:1;
+  padding:6px 8px;
+  border:2px solid var(--border-dark);
+  border-radius:6px;
+  background:#fff;
+  font-weight:700;
+}
+
+/* Searchable Select - Clean Style */
+.searchable-select-wrapper{
+  position:relative;
+  flex:1;
+}
+.searchable-select-input{
+  width:100%;
+  padding:4px 24px 4px 0;
+  border:none;
+  border-bottom:1px dashed #ccc;
+  font-size:13px;
+  font-weight:600;
+  background:transparent url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23333" d="M6 8L2 4h8z"/></svg>') no-repeat right 4px center;
+  cursor:pointer;
+  color:var(--ink);
+  font-family:Inter, sans-serif;
+}
+.searchable-select-input:focus{
+  outline:none;
+  border-bottom:1px solid var(--accent);
+  background-color:#fafafa;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23333" d="M6 8L2 4h8z"/></svg>');
+  background-repeat:no-repeat;
+  background-position:right 4px center;
+}
+.searchable-select-dropdown{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  max-height:250px;
+  overflow-y:auto;
+  background:#fff;
+  border:2px solid var(--border-dark);
+  border-radius:6px;
+  margin-top:4px;
+  box-shadow:0 8px 24px var(--shadow);
+  z-index:1000;
+  display:none;
+}
+.searchable-select-dropdown.active{
+  display:block;
+}
+.searchable-select-option{
+  padding:10px 12px;
+  font-size:13px;
+  cursor:pointer;
+  border-bottom:1px solid #eee;
+  transition:.15s;
+}
+.searchable-select-option:last-child{
+  border-bottom:none;
+}
+.searchable-select-option:hover{
+  background:var(--accent);
+  color:#fff;
+}
+.searchable-select-option.selected{
+  background:var(--accent-2);
+  color:#fff;
+  font-weight:600;
+}
+.searchable-select-option.hidden{
+  display:none;
+}
+
+/* Filter Section - Yellow Highlighted */
+.filter-section{
+  background:var(--yellow-highlight);
+  border:2px solid var(--border-dark);
+  border-radius:8px;
+  padding:16px 20px;
+  margin-bottom:25px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+  align-items:center;
+}
+
+.filter-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.filter-label{
+  font-weight:700;
+  font-size:12px;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+
+.filter-select{
+  padding:6px 10px;
+  border:2px solid var(--border-dark);
+  border-radius:5px;
+  font-size:13px;
+  font-weight:600;
+  background:#fff;
+  min-width:150px;
+}
+
+/* Action Buttons */
+.action-buttons{
+  display:flex;
+  gap:12px;
+  margin-left:auto;
+}
+
+.btn{
+  padding:8px 20px;
+  border:2px solid var(--border-dark);
+  border-radius:8px;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.15s;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  text-transform:uppercase;
+}
+
+.btn-primary{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+
+.btn-secondary{
+  background:#fff;
+  color:var(--ink);
+}
+
+.btn-danger{
+  background:#ff6b6b;
+  color:#fff;
+  border-color:#ff6b6b;
+}
+
+.btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px var(--shadow);
+}
+
+/* Print Wrapper - Contains everything for print */
+.print-wrapper{
+  display:block;
+}
+
+/* Header repeat table - hidden on screen */
+.header-repeat-table{
+  display:none;
+  width:100%;
+  border-collapse:collapse;
+}
+
+/* Print value spans */
+.print-value{
+  font-weight:600;
+  color:var(--ink);
+}
+
+/* Invoice Table */
+.invoice-table-wrapper{
+  border:2px solid var(--border-dark);
+  border-radius:8px;
+  overflow:hidden;
+  margin-bottom:20px;
+}
+
+.invoice-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+}
+
+.invoice-table thead th{
+  background:#e8e8e8;
+  border:1px solid var(--border-dark);
+  padding:10px 6px;
+  font-weight:700;
+  text-align:center;
+  color:var(--ink);
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  font-size:10px;
+}
+
+.invoice-table tbody td{
+  border:1px solid var(--border-dark);
+  padding:8px 6px;
+  text-align:center;
+  background:#fff;
+}
+
+.invoice-table tbody td:first-child{
+  font-weight:600;
+  background:#f9f9f9;
+}
+
+.invoice-table tbody tr:hover td{
+  background:#fafafa;
+}
+
+.invoice-table input{
+  width:100%;
+  border:none;
+  background:transparent;
+  text-align:center;
+  font-size:11px;
+  padding:2px;
+}
+
+.invoice-table input:focus{
+  outline:2px solid var(--accent);
+  background:#fff;
+}
+
+/* Column widths */
+.col-sr{width:40px;}
+.col-lot{width:80px;}
+.col-desc{width:150px;}
+.col-shape{width:70px;}
+.col-size{width:60px;}
+.col-grade{width:60px;}
+.col-pcs{width:50px;}
+.col-cts{width:60px;}
+.col-price{width:70px;}
+.col-amount{width:80px;}
+.col-remarks{width:120px;}
+
+/* Totals Row */
+.totals-row{
+  font-weight:700;
+  background:#f0f0f0 !important;
+}
+
+.totals-row td{
+  background:#f0f0f0 !important;
+  font-size:12px;
+  padding:12px 6px !important;
+}
+
+/* Loading Overlay */
+.loading-overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background:rgba(0,0,0,0.7);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.loading-overlay.active{
+  display:flex;
+}
+
+.loading-spinner{
+  background:#fff;
+  padding:30px 40px;
+  border-radius:12px;
+  text-align:center;
+}
+
+.spinner{
+  border:4px solid #f3f3f3;
+  border-top:4px solid var(--accent);
+  border-radius:50%;
+  width:50px;
+  height:50px;
+  animation:spin 1s linear infinite;
+  margin:0 auto 15px;
+}
+
+@keyframes spin{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
+}
+
+/* Modal overlay & container for Invoice List */
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10050;
+  padding:24px;
+}
+.modal-overlay.active{
+  display:flex;
+}
+.modal {
+  width:100%;
+  max-width:1100px;
+  max-height:88vh;
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.35);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 18px;
+  border-bottom:1px solid #eee;
+  background:linear-gradient(90deg, #fff, #fafafa);
+}
+.modal-title{
+  font-weight:700;
+  font-size:16px;
+}
+.modal-body{
+  padding:12px 16px;
+  overflow:auto;
+  flex:1 1 auto;
+}
+.modal-footer{
+  padding:10px 16px;
+  border-top:1px solid #eee;
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+
+/* Invoice list table inside modal */
+.invoice-list-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+.invoice-list-table thead th{
+  text-align:left;
+  padding:10px 8px;
+  background:#f6f6f6;
+  border-bottom:1px solid #e7e7e7;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+.invoice-list-table tbody td{
+  padding:10px 8px;
+  border-bottom:1px solid #f0f0f0;
+}
+.invoice-row{
+  cursor:pointer;
+  transition:background .12s;
+}
+.invoice-row:hover{
+  background:#fafafa;
+}
+
+/* Row details (collapsible) */
+.row-details{
+  padding:8px 12px;
+  background:#fffef8;
+  border-left:3px solid var(--accent);
+  font-size:13px;
+  white-space:pre-wrap;
+}
+
+/* Search input inside modal */
+.modal-search {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+.modal-search input{
+  flex:1;
+  padding:8px 10px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  font-size:13px;
+}
+
+/* Responsive */
+@media (max-width:900px){
+  .header-grid{grid-template-columns:1fr; gap:8px 12px;}
+  .modal{max-width:100%; padding:0;}
+}
+
+/* ============================================
+   PRINT STYLES - REPEATING TABLE HEADERS
+   ============================================ */
+
+@page {
+  size: auto;
+  margin: 0.4in 0.5in 0.6in 0.5in;
+}
+
+@media print {
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+  
+  /* Hide non-printable elements */
+  .nav-vertical,
+  .filter-section,
+  .action-buttons,
+  .no-print,
+  .loading-overlay,
+  .searchable-select-dropdown,
+  .screen-only-header,
+  .modal-overlay,
+  .modal {
+    display: none !important;
+  }
+  
+  /* Remove workspace margins */
+  .workspace {
+    margin-left: 0;
+    padding: 0;
+    width: 100%;
+  }
+  
+  /* Invoice Container for Print */
+  .invoice-container {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
+    border-radius: 0;
+    background: #fff;
+    width: 100%;
+  }
+  
+  /* CRITICAL: Print wrapper as table to enable header repetition */
+  .print-wrapper {
+    display: table !important;
+    width: 100%;
+  }
+  
+  /* Invoice Header Wrapper - Repeats on every page */
+  .invoice-header-wrapper {
+    display: table-header-group;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+  }
+  
+  /* Show header-repeat-table in print */
+  .header-repeat-table {
+    display: table !important;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .header-repeat-table thead {
+    display: table-header-group;
+  }
+  
+  .header-repeat-table thead td {
+    padding: 0;
+    border: none;
+  }
+  
+  /* Print value spans styling */
+  .print-value {
+    font-weight: 600;
+    color: #000 !important;
+    font-size: 11px;
+  }
+  
+  /* INVOICE Title */
+  .invoice-title {
+    border-bottom: 3px solid #000;
+    font-size: 26px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    page-break-after: avoid;
+  }
+  
+  /* Header Grid */
+  .header-grid {
+    gap: 8px 20px;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #000;
+    page-break-after: avoid;
+  }
+  
+  /* Responsive header layout for portrait */
+  @media print and (orientation: portrait) {
+    .header-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 6px 15px !important;
+    }
+  }
+  
+  .field-label {
+    min-width: 110px;
+    font-size: 10px;
+  }
+  
+  .field-value {
+    font-size: 11px;
+  }
+  
+  .field-value input,
+  .searchable-select-input {
+    border-bottom: none !important;
+    font-size: 11px;
+    padding: 2px 0;
+    background: transparent !important;
+    color: #000 !important;
+  }
+  
+  /* Table content wrapper - Part of outer table */
+  .table-content-wrapper {
+    display: table-row-group;
+  }
+  
+  /* Table Wrapper */
+  .invoice-table-wrapper {
+    margin-bottom: 0;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+  
+  /* Invoice Table */
+  .invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    display: table !important;
+  }
+  
+  /* Hide original table header (we use the repeating one in invoice-header-wrapper) */
+  .invoice-table-wrapper .invoice-table thead {
+    display: none !important;
+  }
+  
+  /* Style for table headers in header-repeat-table */
+  .header-repeat-table thead th {
+    background: #e8e8e8 !important;
+    border: 1px solid #000 !important;
+    padding: 6px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+  }
+  
+  /* CRITICAL Fix: Table Body must be table-row-group */
+  .invoice-table tbody {
+    display: table-row-group !important;
+  }
+  
+  /* Table Rows - Prevent Splitting */
+  .invoice-table tbody tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  .invoice-table tbody td {
+    border: 1px solid #000 !important;
+    padding: 5px 4px;
+    text-align: center;
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .invoice-table tbody td:first-child {
+    font-weight: 600;
+    background: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Hide Empty Rows in Print */
+  .invoice-table tbody tr.empty-row {
+    display: none !important;
+  }
+  
+  /* Totals Row */
+  .totals-row {
+    page-break-inside: avoid;
+    page-break-before: avoid;
+    font-weight: 700;
+    background: #e8e8e8 !important;
+  }
+  
+  .totals-row td {
+    background: #e8e8e8 !important;
+    font-size: 11px;
+    padding: 8px 4px !important;
+    border: 1px solid #000 !important;
+    font-weight: 700;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Keep last 5 data rows with totals */
+  .invoice-table tbody tr:nth-last-child(-n+6) {
+    page-break-after: avoid;
+  }
+  
+  /* Portrait adjustments */
+  @media print and (orientation: portrait) {
+    .invoice-title {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    
+    .field-label {
+      min-width: 95px;
+      font-size: 9px;
+    }
+    
+    .field-value,
+    .field-value input,
+    .searchable-select-input {
+      font-size: 10px;
+    }
+    
+    .invoice-table {
+      font-size: 9px;
+    }
+    
+    .invoice-table thead th {
+      font-size: 8px;
+      padding: 4px 2px;
+    }
+    
+    .invoice-table tbody td {
+      padding: 4px 2px;
+      font-size: 9px;
+    }
+    
+    .totals-row td {
+      font-size: 10px;
+      padding: 6px 2px !important;
+    }
+  }
+  
+  /* Ensure Color Accuracy */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner">
+    <div class="spinner"></div>
+    <div style="font-weight:600;color:var(--ink);">Loading data...</div>
+  </div>
+</div>
+
+<!-- Modal Overlay for Invoice List -->
+<div id="invoiceModalOverlay" class="modal-overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="invoiceModalTitle">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="modal-title" id="invoiceModalTitle">Invoice List</div>
+        <div style="color:var(--ink-soft);font-size:13px;" id="invoiceCountLabel"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="invoiceSearchInput" class="modal-search-input" placeholder="Search invoices (number, client, date)..." style="padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+        <button id="closeInvoiceModalBtn" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+    <div class="modal-body" id="invoiceModalBody">
+      <div class="modal-search">
+        <input type="text" id="invoiceModalSearch" placeholder="Filter by invoice number, client or status..." />
+      </div>
+
+      <div style="overflow:auto;">
+        <table class="invoice-list-table" id="invoiceListTable">
+          <thead>
+            <tr>
+              <th style="width:120px;">Invoice #</th>
+              <th style="width:220px;">Client</th>
+              <th style="width:130px;">Date</th>
+              <th style="text-align:right;width:120px;">Total</th>
+              <th style="text-align:right;width:120px;">Net</th>
+              <th style="width:90px;">Status</th>
+              <th style="width:140px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="invoiceListTbody">
+            <!-- populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="closeInvoiceModalFooterBtn" class="btn btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEFT NAVIGATION -->
+<div class="nav-vertical">
+  <a href="index.html" class="nav-item" title="Add">➕</a>
+  <a href="added.html" class="nav-item" title="Added">📋</a>
+  <a href="sell.html" class="nav-item" title="Sell">💎</a>
+  <a href="reports.html" class="nav-item" title="Reports">📊</a>
+  <a href="reports2.html" class="nav-item" title="Reports 2">📊</a>
+  <a href="reports3.html" class="nav-item active" title="Reports">📊</a>
+</div>
+
+<div class="workspace">
+  <div class="invoice-container">
+    
+    <!-- Print Wrapper - Acts as block for print -->
+    <div class="print-wrapper">
+      
+      <!-- Screen-only Invoice Header (Hidden in print) -->
+      <div class="screen-only-header">
+        <!-- INVOICE Title -->
+        <div class="invoice-title">INVOICE</div>
+        
+        <!-- Header Fields -->
+        <div class="header-grid">
+          <div class="field-row">
+            <span class="field-label">DATE:</span>
+            <span class="field-value">
+              <input type="date" id="invoiceDate">
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">INVOICE NO.:</span>
+            <span class="field-value">
+              <input type="text" id="invoiceNo">
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">TRANSACTION TYPE:</span>
+            <span class="field-value">
+              <div class="searchable-select-wrapper" id="txTypeSelectWrapper"></div>
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">PARTY:</span>
+            <span class="field-value">
+              <div class="searchable-select-wrapper" id="partySelectWrapper"></div>
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">SELL ID:</span>
+            <span class="field-value">
+              <div class="searchable-select-wrapper" id="sellIdSelectWrapper"></div>
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">TOTAL CTS:</span>
+            <span class="field-value">
+              <input type="text" id="totalCTS" readonly>
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">TOTAL AMOUNT:</span>
+            <span class="field-value">
+              <input type="text" id="totalAmount" readonly>
+            </span>
+          </div>
+          
+          <div class="field-row">
+            <span class="field-label">AVERAGE PRICE:</span>
+            <span class="field-value">
+              <input type="text" id="avgPrice" readonly>
+            </span>
+          </div>
+
+          <!-- Commission Input and Toggle -->
+          <div class="field-row">
+            <span class="field-label">COMMISSION:</span>
+            <span class="field-value">
+              <div class="commission-control">
+                <select id="commissionSign" class="commission-sign" title="Choose addition or deduction">
+                  <option value="-" selected>−</option>
+                  <option value="+">+</option>
+                </select>
+                <input id="commissionInput" class="commission-input" placeholder="e.g. 5% or 100" />
+              </div>
+            </span>
+          </div>
+
+          <!-- Commission calculated & Net -->
+          <div class="field-row">
+            <span class="field-label">COMMISSION VALUE:</span>
+            <span class="field-value">
+              <input type="text" id="commissionValue" readonly>
+            </span>
+          </div>
+
+          <div class="field-row">
+            <span class="field-label">NET AMOUNT:</span>
+            <span class="field-value">
+              <input type="text" id="netAmount" readonly>
+            </span>
+          </div>
+
+          <!-- Invoice status and save/update actions -->
+          <div class="field-row">
+            <span class="field-label">STATUS:</span>
+            <span class="field-value">
+              <select id="invoiceStatus" class="filter-select">
+                <option value="For Approval">For Approval</option>
+                <option value="Final">Final</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </span>
+          </div>
+
+        </div>
+      </div>
+      
+      <!-- Invoice Header Wrapper (Repeats on every page) -->
+      <div class="invoice-header-wrapper">
+        <table class="header-repeat-table">
+          <thead>
+            <tr>
+              <td colspan="11" style="padding:0;">
+                <!-- INVOICE Title -->
+                <div class="invoice-title">INVOICE</div>
+                
+                <!-- Header Fields -->
+                <div class="header-grid">
+                  <div class="field-row">
+                    <span class="field-label">DATE:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printDate"></span>
+                    </span>
+                  </div>
+                  
+                  <div class="field-row">
+                    <span class="field-label">INVOICE NO.:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printInvoiceNo"></span>
+                    </span>
+                  </div>
+                  
+                  <div class="field-row">
+                    <span class="field-label">TRANSACTION TYPE:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printTxType"></span>
+                    </span>
+                  </div>
+                  
+                  <div class="field-row">
+                    <span class="field-label">PARTY:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printParty"></span>
+                    </span>
+                  </div>
+                  
+                  <div class="field-row">
+                    <span class="field-label">SELL ID:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printSellId"></span>
+                    </span>
+                  </div>
+                  
+                  <div class="field-row">
+                    <span class="field-label">TOTAL CTS:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printTotalCTS"></span>
+                    </span>
+                  </div>
+                  
+                  <div class="field-row">
+                    <span class="field-label">TOTAL AMOUNT:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printTotalAmount"></span>
+                    </span>
+                  </div>
+
+                  <div class="field-row">
+                    <span class="field-label">COMMISSION:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printCommission"></span>
+                    </span>
+                  </div>
+
+                  <div class="field-row">
+                    <span class="field-label">NET AMOUNT:</span>
+                    <span class="field-value">
+                      <span class="print-value" id="printNetAmount"></span>
+                    </span>
+                  </div>
+
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="col-sr">SR NO.</th>
+              <th class="col-lot">LOT NO.</th>
+              <th class="col-desc">DESCRIPTION</th>
+              <th class="col-shape">SHAPE</th>
+              <th class="col-size">SIZE</th>
+              <th class="col-grade">GRADE</th>
+              <th class="col-pcs">PCS</th>
+              <th class="col-cts">CTS</th>
+              <th class="col-price">PRICE</th>
+              <th class="col-amount">AMOUNT</th>
+              <th class="col-remarks">REMARKS</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      
+      <!-- Table Content Wrapper -->
+      <div class="table-content-wrapper">
+        <!-- Filter Section (Yellow Highlighted) -->
+        <div class="filter-section no-print">
+          <div class="filter-group">
+            <label class="filter-label">DATE FROM:</label>
+            <input type="date" class="filter-select" id="dateFrom" style="width:160px;">
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">DATE TO:</label>
+            <input type="date" class="filter-select" id="dateTo" style="width:160px;">
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">SOURCE:</label>
+            <select class="filter-select" id="sourceFilter">
+              <option value="">All Sources</option>
+              <option value="AJMZ">AJMZ</option>
+              <option value="CALIB">CALIB</option>
+            </select>
+          </div>
+          
+          <div class="action-buttons">
+            <button class="btn btn-secondary" id="clearBtn">🔄 CLEAR</button>
+            <button class="btn btn-secondary" id="viewInvoicesBtn">📄 VIEW INVOICE LIST</button>
+            <button class="btn btn-primary" id="printBtn">🖨️ PRINT</button>
+            <button class="btn btn-primary" id="saveInvoiceBtn">💾 SAVE INVOICE</button>
+            <button class="btn btn-secondary" id="cancelEditBtn" style="display:none;">✖ Cancel Edit</button>
+          </div>
+        </div>
+        
+        <!-- Invoice Table -->
+        <div class="invoice-table-wrapper">
+          <table class="invoice-table">
+            <thead>
+              <tr>
+                <th class="col-sr">SR NO.</th>
+                <th class="col-lot">LOT NO.</th>
+                <th class="col-desc">DESCRIPTION</th>
+                <th class="col-shape">SHAPE</th>
+                <th class="col-size">SIZE</th>
+                <th class="col-grade">GRADE</th>
+                <th class="col-pcs">PCS</th>
+                <th class="col-cts">CTS</th>
+                <th class="col-price">PRICE</th>
+                <th class="col-amount">AMOUNT</th>
+                <th class="col-remarks">REMARKS</th>
+              </tr>
+            </thead>
+            <tbody id="invoiceTableBody">
+              <!-- Rows will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+</div>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyC72tFu_MdXf4eq4PMI-rtd4PpMfpLNZpM",
+  authDomain: "ajmzinventory.firebaseapp.com",
+  databaseURL: "https://ajmzinventory-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ajmzinventory",
+  storageBucket: "ajmzinventory.firebasestorage.app",
+  messagingSenderId: "1069845316242",
+  appId: "1:1069845316242:web:c55be9de3724734f88dc4b"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Utility Functions
+function esc(v){
+  if(v===null||v===undefined)return"";
+  return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function num(v){
+  if(v===null||v===undefined||v==="")return 0;
+  const n=Number(String(v).replace(/,/g,"").replace(/\s+/g,""));
+  return isNaN(n)?0:n;
+}
+
+function fmt(v){
+  return Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function parseMulti(str){
+  if(!str)return [];
+  if(Array.isArray(str))return str;
+  return String(str).split(",").map(s=>s.trim()).filter(Boolean);
+}
+
+function multiDisplay(arr){
+  if(!arr)return "";
+  if(Array.isArray(arr))return arr.join(", ");
+  return arr;
+}
+
+// Global Data Storage
+let AJMZ_PARENTS = [];
+let CALIB_PARENTS = [];
+let ALL_TRANSACTIONS = [];
+let INVOICE_COUNTER = 1;
+let CURRENT_FILTERED_TRANSACTIONS = [];
+let INVOICES = []; // invoice list loaded from DB
+let EDITING_INVOICE_KEY = null; // track update vs create
+
+// Searchable Select Component
+function createSearchableSelect(wrapperId, values, placeholder = "Select..."){
+  const wrapper = document.getElementById(wrapperId);
+  if(!wrapper) return null;
+  
+  wrapper.innerHTML = `
+    <input type="text" class="searchable-select-input" placeholder="${placeholder}" readonly>
+    <div class="searchable-select-dropdown"></div>
+  `;
+  
+  const input = wrapper.querySelector('.searchable-select-input');
+  const dropdown = wrapper.querySelector('.searchable-select-dropdown');
+  let selectedValue = "";
+  
+  const opts = [placeholder, ...values];
+  opts.forEach(val => {
+    const opt = document.createElement('div');
+    opt.className = 'searchable-select-option';
+    opt.textContent = val;
+    opt.dataset.value = val === placeholder ? "" : val;
+    if(val === placeholder) opt.classList.add('selected');
+    
+    opt.addEventListener('click', () => {
+      selectedValue = opt.dataset.value;
+      input.value = opt.textContent;
+      input.setAttribute('data-value', selectedValue);
+      dropdown.querySelectorAll('.searchable-select-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      dropdown.classList.remove('active');
+      wrapper.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+    dropdown.appendChild(opt);
+  });
+  
+  input.addEventListener('click', e => {
+    e.stopPropagation();
+    const isActive = dropdown.classList.contains('active');
+    document.querySelectorAll('.searchable-select-dropdown').forEach(d => d.classList.remove('active'));
+    if(!isActive){
+      dropdown.classList.add('active');
+      input.removeAttribute('readonly');
+      input.focus();
+      input.select();
+    }
+  });
+  
+  input.addEventListener('input', () => {
+    const term = input.value.toLowerCase();
+    dropdown.querySelectorAll('.searchable-select-option').forEach(opt => {
+      const text = opt.textContent.toLowerCase();
+      opt.classList.toggle('hidden', !text.includes(term) && opt.dataset.value !== "");
+    });
+  });
+  
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      if(!dropdown.matches(':hover')){
+        dropdown.classList.remove('active');
+        input.setAttribute('readonly', true);
+      }
+    }, 200);
+  });
+  
+  document.addEventListener('click', e => {
+    if(!wrapper.contains(e.target)){
+      dropdown.classList.remove('active');
+      input.setAttribute('readonly', true);
+    }
+  });
+  
+  return {
+    getValue: () => selectedValue,
+    getDisplay: () => input.value || "",
+    setValue: (val) => {
+      selectedValue = val || "";
+      const opt = dropdown.querySelector(`[data-value="${val || ""}"]`);
+      if(opt){
+        input.value = opt.textContent;
+        input.setAttribute('data-value', selectedValue);
+        dropdown.querySelectorAll('.searchable-select-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      } else {
+        // if not found, set raw display
+        input.value = val || "";
+        input.setAttribute('data-value', selectedValue);
+      }
+    },
+    reset: () => {
+      selectedValue = "";
+      input.value = placeholder;
+      input.setAttribute('data-value', "");
+      dropdown.querySelectorAll('.searchable-select-option').forEach(o => {
+        o.classList.remove('selected');
+        if(o.dataset.value === "") o.classList.add('selected');
+      });
+    },
+    updateOptions: (newValues) => {
+      dropdown.innerHTML = "";
+      const newOpts = [placeholder, ...newValues];
+      newOpts.forEach(val => {
+        const opt = document.createElement('div');
+        opt.className = 'searchable-select-option';
+        opt.textContent = val;
+        opt.dataset.value = val === placeholder ? "" : val;
+        if(val === placeholder) opt.classList.add('selected');
+        
+        opt.addEventListener('click', () => {
+          selectedValue = opt.dataset.value;
+          input.value = opt.textContent;
+          input.setAttribute('data-value', selectedValue);
+          dropdown.querySelectorAll('.searchable-select-option').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          dropdown.classList.remove('active');
+          wrapper.dispatchEvent(new Event('change', {bubbles: true}));
+        });
+        dropdown.appendChild(opt);
+      });
+    }
+  };
+}
+
+// Load Data from Firebase (AJMZ, CALIB, SELL)
+async function loadAllData(){
+  showLoading(true);
+  
+  try {
+    const [ajSnap, cbSnap, sellSnap] = await Promise.all([
+      db.ref("ajmzRecords").once("value"),
+      db.ref("calibRecords").once("value"),
+      db.ref("sellRecords").once("value")
+    ]);
+    
+    AJMZ_PARENTS = [];
+    CALIB_PARENTS = [];
+    const sellMap = {};
+    
+    // Load sell records
+    if(sellSnap.exists()){
+      sellSnap.forEach(parentSnap => {
+        const parentKey = parentSnap.key;
+        sellMap[parentKey] = [];
+        parentSnap.forEach(childSnap => {
+          const obj = childSnap.val();
+          obj.key = childSnap.key;
+          obj.cts = num(obj.cts);
+          obj.pcs = num(obj.pcs);
+          obj.price = num(obj.price);
+          obj.amount = num(obj.amount || (obj.cts * obj.price));
+          sellMap[parentKey].push(obj);
+        });
+      });
+    }
+    
+    // Load AJMZ records
+    if(ajSnap.exists()){
+      ajSnap.forEach(s => {
+        const o = s.val();
+        o.key = s.key;
+        o.shape = parseMulti(o.shape);
+        o.size = parseMulti(o.size);
+        o.cts = num(o.cts);
+        o.pcs = num(o.pcs);
+        o.price = num(o.price);
+        o.amount = num(o.amount || (o.cts * o.price));
+        o.__sells = sellMap[o.key] || [];
+        AJMZ_PARENTS.push(o);
+      });
+    }
+    
+    // Load CALIB records
+    if(cbSnap.exists()){
+      cbSnap.forEach(s => {
+        const o = s.val();
+        o.key = s.key;
+        o.shape = parseMulti(o.shape);
+        o.size = parseMulti(o.size);
+        o.cts = num(o.cts);
+        o.pcs = 0;
+        o.price = num(o.price);
+        o.amount = num(o.amount || (o.cts * o.price));
+        o.__sells = sellMap[o.key] || [];
+        CALIB_PARENTS.push(o);
+      });
+    }
+    
+    buildTransactionsList();
+    
+  } catch(error) {
+    console.error("Error loading data:", error);
+    alert("Failed to load data. Please refresh the page.");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Build unified transactions list
+function buildTransactionsList(){
+  ALL_TRANSACTIONS = [];
+  
+  // Process AJMZ sells
+  AJMZ_PARENTS.forEach(parent => {
+    parent.__sells.forEach(sell => {
+      ALL_TRANSACTIONS.push({
+        source: "AJMZ",
+        party: sell.party || "",
+        sellId: sell.sellId || "",
+        date: sell.date || "",
+        txId: parent.txId || "",
+        lot: parent.lotName || "",
+        description: parent.description || "",
+        shape: parent.shape,
+        size: parent.size,
+        grade: parent.lotFormat || "",
+        pcs: sell.pcs,
+        cts: sell.cts,
+        price: sell.price,
+        amount: sell.amount,
+        remarks: sell.remarks || ""
+      });
+    });
+  });
+  
+  // Process CALIB sells
+  CALIB_PARENTS.forEach(parent => {
+    parent.__sells.forEach(sell => {
+      ALL_TRANSACTIONS.push({
+        source: "CALIB",
+        party: sell.party || "",
+        sellId: sell.sellId || "",
+        date: sell.date || "",
+        txId: parent.txId || "",
+        lot: parent.lotName || "",
+        description: parent.description || "",
+        shape: parent.shape,
+        size: parent.size,
+        grade: parent.grade || "",
+        pcs: 0,
+        cts: sell.cts,
+        price: sell.price,
+        amount: sell.amount,
+        remarks: sell.remarks || ""
+      });
+    });
+  });
+}
+
+// Initialize dropdowns
+let partySelect, txTypeSelect, sellIdSelect;
+
+function initializeDropdowns(){
+  // Get unique parties
+  const parties = [...new Set(ALL_TRANSACTIONS.map(t => t.party).filter(Boolean))].sort();
+  partySelect = createSearchableSelect("partySelectWrapper", parties, "Select Party");
+  
+  // Transaction types
+  txTypeSelect = createSearchableSelect("txTypeSelectWrapper", ["AJMZ", "CALIB"], "All Types");
+  
+  // Sell IDs
+  const sellIds = [...new Set(ALL_TRANSACTIONS.map(t => t.sellId).filter(Boolean))].sort();
+  sellIdSelect = createSearchableSelect("sellIdSelectWrapper", sellIds, "Select Sell ID");
+  
+  // Add change listeners
+  document.getElementById("partySelectWrapper").addEventListener("change", onPartyChange);
+  document.getElementById("txTypeSelectWrapper").addEventListener("change", filterTransactions);
+  document.getElementById("sellIdSelectWrapper").addEventListener("change", onSellIdChange);
+}
+
+// Party selection handler
+function onPartyChange(){
+  const party = partySelect.getValue();
+  if(!party){
+    sellIdSelect.reset();
+    filterTransactions();
+    return;
+  }
+  
+  // Update sell IDs for selected party
+  const partySellIds = [...new Set(
+    ALL_TRANSACTIONS
+      .filter(t => t.party === party)
+      .map(t => t.sellId)
+      .filter(Boolean)
+  )].sort();
+  
+  sellIdSelect.updateOptions(partySellIds);
+  filterTransactions();
+}
+
+// Sell ID selection handler
+function onSellIdChange(){
+  filterTransactions();
+}
+
+// Parse commission input and compute commission value
+// accepts strings like "5%", "5 %", "100", "  2.5% "
+function computeCommissionValue(totalAmount, commissionInputStr){
+  if(!commissionInputStr) return 0;
+  const raw = String(commissionInputStr).trim();
+  if(raw === "") return 0;
+  // detect percentage if contains %
+  if(raw.indexOf('%') !== -1){
+    // remove % and spaces
+    const justNum = raw.replace('%','').replace(/\s+/g,'');
+    const p = parseFloat(justNum);
+    if(isNaN(p)) return 0;
+    return (totalAmount * (p / 100));
+  } else {
+    // treat as fixed amount
+    const n = num(raw);
+    return n;
+  }
+}
+
+// Filter and display transactions
+function filterTransactions(){
+  const party = partySelect.getValue();
+  const txType = txTypeSelect.getValue();
+  const sellId = sellIdSelect.getValue();
+  const source = document.getElementById("sourceFilter").value;
+  const dateFrom = document.getElementById("dateFrom").value;
+  const dateTo = document.getElementById("dateTo").value;
+  
+  let filtered = ALL_TRANSACTIONS;
+  
+  // Apply filters
+  if(party) filtered = filtered.filter(t => t.party === party);
+  if(txType) filtered = filtered.filter(t => t.source === txType);
+  if(sellId) filtered = filtered.filter(t => t.sellId === sellId);
+  if(source) filtered = filtered.filter(t => t.source === source);
+  
+  // Apply date range filter
+  if(dateFrom || dateTo){
+    filtered = filtered.filter(t => {
+      if(!t.date) return false;
+      const tDate = new Date(t.date);
+      
+      if(dateFrom){
+        const fromDate = new Date(dateFrom);
+        if(tDate < fromDate) return false;
+      }
+      
+      if(dateTo){
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if(tDate > toDate) return false;
+      }
+      
+      return true;
+    });
+  }
+  
+  CURRENT_FILTERED_TRANSACTIONS = filtered;
+  populateTable(filtered);
+  calculateTotals(filtered);
+}
+
+// Populate invoice table
+function populateTable(transactions){
+  const tbody = document.getElementById("invoiceTableBody");
+  tbody.innerHTML = "";
+  
+  const maxRows = 30;
+  const rowsToShow = Math.max(transactions.length, maxRows);
+  
+  // Add transaction rows
+  for(let i = 0; i < rowsToShow; i++){
+    const tr = document.createElement('tr');
+    
+    if(i < transactions.length){
+      const t = transactions[i];
+      tr.innerHTML = `
+        <td class="col-sr">${i + 1}</td>
+        <td class="col-lot">${esc(t.lot)}</td>
+        <td class="col-desc">${esc(t.description)}</td>
+        <td class="col-shape">${esc(multiDisplay(t.shape))}</td>
+        <td class="col-size">${esc(multiDisplay(t.size))}</td>
+        <td class="col-grade">${esc(t.grade)}</td>
+        <td class="col-pcs">${t.pcs > 0 ? fmt(t.pcs) : "-"}</td>
+        <td class="col-cts">${fmt(t.cts)}</td>
+        <td class="col-price">${fmt(t.price)}</td>
+        <td class="col-amount">${fmt(t.amount)}</td>
+        <td class="col-remarks">${esc(t.remarks)}</td>
+      `;
+    } else {
+      // Empty row
+      tr.classList.add('empty-row');
+      tr.innerHTML = `
+        <td class="col-sr">${i + 1}</td>
+        <td class="col-lot"></td>
+        <td class="col-desc"></td>
+        <td class="col-shape"></td>
+        <td class="col-size"></td>
+        <td class="col-grade"></td>
+        <td class="col-pcs"></td>
+        <td class="col-cts"></td>
+        <td class="col-price"></td>
+        <td class="col-amount"></td>
+        <td class="col-remarks"></td>
+      `;
+    }
+    
+    tbody.appendChild(tr);
+  }
+  
+  // Add totals row
+  const totalCts = transactions.reduce((sum, t) => sum + t.cts, 0);
+  const totalPcs = transactions.reduce((sum, t) => sum + t.pcs, 0);
+  const totalAmt = transactions.reduce((sum, t) => sum + t.amount, 0);
+  
+  const totalsRow = document.createElement('tr');
+  totalsRow.className = 'totals-row';
+  totalsRow.innerHTML = `
+    <td colspan="6" style="text-align:right;">TOTALS:</td>
+    <td class="col-pcs">${totalPcs > 0 ? fmt(totalPcs) : "-"}</td>
+    <td class="col-cts">${fmt(totalCts)}</td>
+    <td class="col-price">-</td>
+    <td class="col-amount">${fmt(totalAmt)}</td>
+    <td class="col-remarks"></td>
+  `;
+  tbody.appendChild(totalsRow);
+}
+
+// Calculate and display totals (also compute commission and net)
+function calculateTotals(transactions){
+  const totalCts = transactions.reduce((sum, t) => sum + t.cts, 0);
+  const totalAmt = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const avgPrice = totalCts > 0 ? totalAmt / totalCts : 0;
+  
+  document.getElementById("totalCTS").value = fmt(totalCts);
+  document.getElementById("totalAmount").value = fmt(totalAmt);
+  document.getElementById("avgPrice").value = fmt(avgPrice);
+
+  // Commission handling
+  const commissionInputStr = document.getElementById("commissionInput").value || "";
+  const commissionSign = document.getElementById("commissionSign").value || "-";
+  const commissionVal = computeCommissionValue(totalAmt, commissionInputStr);
+
+  // Apply sign: if commissionSign is '-', subtract; if '+', add
+  const netAmountVal = commissionSign === "+" ? (totalAmt + commissionVal) : (totalAmt - commissionVal);
+
+  // Update on-screen commission and net fields
+  document.getElementById("commissionValue").value = fmt(commissionVal);
+  document.getElementById("netAmount").value = fmt(netAmountVal);
+
+  // Also update print spans (so that print always reflects latest)
+  document.getElementById("printTotalCTS").textContent = fmt(totalCts);
+  document.getElementById("printTotalAmount").textContent = fmt(totalAmt);
+
+  // Commission print should include sign and display the calculated value.
+  const signSymbol = commissionSign === "+" ? "+" : "−";
+  const commissionPrintText = `${signSymbol} ${fmt(commissionVal)}`;
+  document.getElementById("printCommission").textContent = commissionPrintText;
+  document.getElementById("printNetAmount").textContent = fmt(netAmountVal);
+}
+
+/* ---------------------------
+   Save / Update / Delete Invoice
+   --------------------------- */
+
+// Build invoice payload from current form state
+function buildInvoicePayload(){
+  const date = document.getElementById("invoiceDate").value || "";
+  const invoiceNo = document.getElementById("invoiceNo").value || generateInvoiceNo();
+  const party = (partySelect && partySelect.getValue()) || document.querySelector('#partySelectWrapper .searchable-select-input').value || "";
+  const sellId = (sellIdSelect && sellIdSelect.getValue()) || "";
+  const status = document.getElementById("invoiceStatus").value || "For Approval";
+
+  // Items come from CURRENT_FILTERED_TRANSACTIONS
+  const items = (CURRENT_FILTERED_TRANSACTIONS || []).map((t) => ({
+    source: t.source || "",
+    lot: t.lot || "",
+    description: t.description || "",
+    shape: t.shape || [],
+    size: t.size || [],
+    grade: t.grade || "",
+    pcs: t.pcs || 0,
+    cts: t.cts || 0,
+    price: t.price || 0,
+    amount: t.amount || 0,
+    remarks: t.remarks || "",
+    sellId: t.sellId || "",
+    date: t.date || ""
+  }));
+
+  const totalCts = items.reduce((sum, it) => sum + num(it.cts), 0);
+  const totalAmt = items.reduce((sum, it) => sum + num(it.amount), 0);
+
+  const commissionInput = document.getElementById("commissionInput").value || "";
+  const commissionSign = document.getElementById("commissionSign").value || "-";
+  const commissionValue = computeCommissionValue(totalAmt, commissionInput);
+  const netAmount = commissionSign === "+" ? (totalAmt + commissionValue) : (totalAmt - commissionValue);
+
+  const payload = {
+    invoiceNo,
+    date,
+    party,
+    sellId,
+    items,
+    totalCTS: totalCts,
+    totalAmount: totalAmt,
+    avgPrice: totalCts > 0 ? (totalAmt / totalCts) : 0,
+    commissionInput,
+    commissionSign,
+    commissionValue,
+    netAmount,
+    status,
+    updatedAt: new Date().toISOString()
+  };
+
+  if(!EDITING_INVOICE_KEY){
+    payload.createdAt = new Date().toISOString();
+  }
+
+  return payload;
+}
+
+// Save new invoice (push)
+async function saveInvoice(){
+  // Basic validation
+  const payload = buildInvoicePayload();
+  if(!payload.invoiceNo || !payload.date){
+    alert("Please ensure invoice number and date are set before saving.");
+    return;
+  }
+  if(!payload.items || payload.items.length === 0){
+    if(!confirm("This invoice has no line items. Do you want to save anyway?")) return;
+  }
+
+  // Check duplicate invoiceNo under /invoices
+  try {
+    showLoading(true);
+    const invoicesRef = db.ref("invoices");
+    // quick duplicate check
+    const dupSnap = await invoicesRef.orderByChild("invoiceNo").equalTo(payload.invoiceNo).once("value");
+    if(dupSnap.exists() && !EDITING_INVOICE_KEY){
+      // duplicate exists and we are creating new
+      if(!confirm(`An invoice with number "${payload.invoiceNo}" already exists. Save anyway (will create another record)?`)){
+        showLoading(false);
+        return;
+      }
+    }
+
+    const pushRef = await invoicesRef.push(payload);
+    const key = pushRef.key;
+    // Update local INVOICES cache and refresh modal list
+    INVOICES.unshift({ key, invoiceNo: payload.invoiceNo, client: payload.party, date: payload.date, totalAmount: payload.totalAmount, netAmount: payload.netAmount, status: payload.status, raw: payload });
+    alert("Invoice saved successfully.");
+    // If modal open, refresh render
+    if(document.getElementById('invoiceModalOverlay').classList.contains('active')){
+      renderInvoicesTable(INVOICES);
+    }
+    // after save, clear edit state
+    clearEditState();
+  } catch(err){
+    console.error("Save invoice failed", err);
+    alert("Failed to save invoice. See console for details.");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Update existing invoice
+async function updateInvoice(key){
+  if(!key) return;
+  const payload = buildInvoicePayload();
+  try {
+    showLoading(true);
+    const ref = db.ref("invoices/" + key);
+    await ref.update(payload);
+    // Update local INVOICES cache
+    const idx = INVOICES.findIndex(i => i.key === key);
+    if(idx !== -1){
+      INVOICES[idx] = { key, invoiceNo: payload.invoiceNo, client: payload.party, date: payload.date, totalAmount: payload.totalAmount, netAmount: payload.netAmount, status: payload.status, raw: payload };
+    }
+    alert("Invoice updated successfully.");
+    if(document.getElementById('invoiceModalOverlay').classList.contains('active')){
+      renderInvoicesTable(INVOICES);
+    }
+    clearEditState();
+  } catch(err){
+    console.error("Update invoice failed", err);
+    alert("Failed to update invoice. See console for details.");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Delete invoice
+async function deleteInvoice(key){
+  if(!key) return;
+  if(!confirm("Delete this invoice? This action cannot be undone.")) return;
+  try {
+    showLoading(true);
+    await db.ref("invoices/" + key).remove();
+    // Update local cache
+    INVOICES = INVOICES.filter(i => i.key !== key);
+    renderInvoicesTable(INVOICES);
+    alert("Invoice deleted.");
+  } catch(err){
+    console.error("Delete invoice failed", err);
+    alert("Failed to delete invoice. See console for details.");
+  } finally {
+    showLoading(false);
+  }
+}
+
+/* ------------------------------
+   Invoice List Modal Functionality
+   ------------------------------ */
+
+const invoiceModalOverlay = document.getElementById('invoiceModalOverlay');
+const invoiceListTbody = document.getElementById('invoiceListTbody');
+const invoiceModalSearch = document.getElementById('invoiceModalSearch');
+const invoiceCountLabel = document.getElementById('invoiceCountLabel');
+const viewInvoicesBtn = document.getElementById('viewInvoicesBtn');
+
+function openInvoiceModal(){
+  document.body.classList.add('modal-active');
+  invoiceModalOverlay.classList.add('active');
+  invoiceModalOverlay.setAttribute('aria-hidden','false');
+
+  // Load invoices (prefer /invoices node)
+  fetchInvoicesFromDB().then(() => {
+    renderInvoicesTable(INVOICES);
+  });
+}
+
+function closeInvoiceModal(){
+  document.body.classList.remove('modal-active');
+  invoiceModalOverlay.classList.remove('active');
+  invoiceModalOverlay.setAttribute('aria-hidden','true');
+}
+
+// Fetch invoices from DB, prioritizing /invoices
+async function fetchInvoicesFromDB(){
+  // Always refresh from DB when opening modal (to keep latest)
+  showLoading(true);
+  INVOICES = [];
+  try {
+    // Primary path
+    const invoicesSnap = await db.ref('invoices').once('value');
+    if(invoicesSnap.exists()){
+      invoicesSnap.forEach(child => {
+        const key = child.key;
+        const val = child.val();
+        const invoiceNo = val.invoiceNo || val.invoice_no || val.invoiceNumber || key;
+        const client = val.party || val.client || val.customer || "";
+        const date = val.date || "";
+        const totalAmount = num(val.totalAmount || val.total || val.totalAmount || val.totalAmount || val.totalAmount || val.totalAmount || val.total || val.totalAmount || val.totalAmount || val.total || 0);
+        const netAmount = num(val.netAmount || val.net || val.netAmount || val.netAmount || val.net || 0) || num(val.netAmount) || num(val.net) || num(val.netAmount) || num(val.net || 0) || 0;
+        const status = val.status || "";
+        INVOICES.push({ key, invoiceNo, client, date, totalAmount: val.totalAmount || val.totalAmount || val.totalAmount || totalAmount, netAmount: val.netAmount || netAmount, status, raw: val });
+      });
+    } else {
+      // Fallback scanning (older behavior)
+      const candidatePaths = ["invoiceRecords", "invoicesList", "invoices_global", "invoices_main"];
+      for(const path of candidatePaths){
+        try {
+          const snap = await db.ref(path).once('value');
+          if(snap.exists()){
+            snap.forEach(child => {
+              const key = child.key;
+              const val = child.val();
+              const invoiceNo = val.invoiceNo || val.invoice_no || val.invoiceNumber || key;
+              const client = val.party || val.client || val.customer || "";
+              const date = val.date || "";
+              const totalAmount = num(val.totalAmount || val.total || 0);
+              const netAmount = num(val.netAmount || val.net || 0);
+              const status = val.status || "";
+              INVOICES.push({ key, invoiceNo, client, date, totalAmount, netAmount, status, raw: val });
+            });
+          }
+        } catch(e){
+          console.warn("Error reading", path, e);
+        }
+      }
+    }
+
+    // Normalize and sort by date descending where possible
+    INVOICES = INVOICES.map(i => {
+      let parsedDate = null;
+      try {
+        parsedDate = i.date ? new Date(i.date) : null;
+      } catch(e){ parsedDate = null; }
+      return {...i, parsedDate};
+    }).sort((a,b)=>{
+      if(a.parsedDate && b.parsedDate) return b.parsedDate - a.parsedDate;
+      if(a.parsedDate && !b.parsedDate) return -1;
+      if(!a.parsedDate && b.parsedDate) return 1;
+      return (b.invoiceNo || "").localeCompare(a.invoiceNo || "");
+    });
+
+  } catch(err){
+    console.error("Failed to fetch invoices", err);
+  } finally {
+    showLoading(false);
+  }
+
+  return INVOICES;
+}
+
+function renderInvoicesTable(list){
+  invoiceListTbody.innerHTML = "";
+  if(!Array.isArray(list) || list.length === 0){
+    invoiceCountLabel.textContent = "No invoices found";
+    invoiceListTbody.innerHTML = `<tr><td colspan="7" style="padding:18px;color:var(--ink-soft)">No invoices found in database.</td></tr>`;
+    return;
+  }
+  invoiceCountLabel.textContent = `${list.length} invoice(s)`;
+  for(const inv of list){
+    const tr = document.createElement('tr');
+    tr.className = 'invoice-row';
+    tr.dataset.key = inv.key || "";
+    tr.innerHTML = `
+      <td>${esc(inv.invoiceNo || "")}</td>
+      <td>${esc(inv.client || "")}</td>
+      <td>${esc(inv.date || "")}</td>
+      <td style="text-align:right">${fmt(inv.totalAmount||0)}</td>
+      <td style="text-align:right">${fmt(inv.netAmount||0)}</td>
+      <td>${esc(inv.status || "")}</td>
+        <td style="white-space: nowrap;">
+          <button class="btn btn-secondary btn-sm" data-action="open" style="display:inline-block;">📂</button>
+          <button class="btn btn-primary btn-sm" data-action="edit" style="display:inline-block;">✏️</button>
+          <button class="btn btn-danger btn-sm" data-action="delete" style="display:inline-block;">🗑️</button>
+        </td>
+
+    `;
+    // Clicking the row body toggles details (but actions are buttons)
+    tr.addEventListener('click', (ev) => {
+      // ignore clicks on action buttons
+      const actionBtn = ev.target && ev.target.closest('button[data-action]');
+      if(actionBtn) return;
+      toggleInvoiceRowDetails(tr, inv);
+    });
+
+    // action handlers
+    tr.querySelector('[data-action="open"]').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // Open invoice in a read-only manner: load into main form but keep editing disabled (we will allow view)
+      loadInvoiceIntoForm(inv, { readOnly: true });
+      closeInvoiceModal();
+    });
+
+    tr.querySelector('[data-action="edit"]').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // load and allow edit
+      loadInvoiceIntoForm(inv, { readOnly: false, asEdit: true });
+      closeInvoiceModal();
+    });
+
+    tr.querySelector('[data-action="delete"]').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      deleteInvoice(inv.key);
+    });
+
+    invoiceListTbody.appendChild(tr);
+  }
+}
+
+// Toggle inline row details (collapsible)
+function toggleInvoiceRowDetails(rowEl, invoiceObj){
+  const next = rowEl.nextElementSibling;
+  const alreadyDetails = next && next.classList && next.classList.contains('row-details-row');
+  // collapse any existing details rows first
+  document.querySelectorAll('.row-details-row').forEach(d => d.remove());
+  if(alreadyDetails){
+    // details already visible, remove and return
+    return;
+  }
+  const detailRow = document.createElement('tr');
+  detailRow.className = 'row-details-row';
+  const td = document.createElement('td');
+  td.colSpan = 7;
+  td.className = 'row-details';
+  // Build a clean detail view: show basic fields and JSON dump below
+  const detailsHtml = `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div><strong>Invoice #:</strong> ${esc(invoiceObj.invoiceNo||"")}</div>
+      <div><strong>Client:</strong> ${esc(invoiceObj.client||"")}</div>
+      <div><strong>Date:</strong> ${esc(invoiceObj.date||"")}</div>
+      <div><strong>Total:</strong> ${fmt(invoiceObj.totalAmount||0)} &nbsp; <strong>Net:</strong> ${fmt(invoiceObj.netAmount||0)}</div>
+      <div><strong>Status:</strong> ${esc(invoiceObj.status||"")}</div>
+      <div style="margin-top:6px;"><strong>Raw Data:</strong></div>
+      <pre style="background:#fff;padding:8px;border:1px solid #eee;border-radius:6px;max-height:220px;overflow:auto;">${esc(JSON.stringify(invoiceObj.raw || {}, null, 2))}</pre>
+    </div>
+  `;
+  td.innerHTML = detailsHtml;
+  detailRow.appendChild(td);
+  rowEl.parentNode.insertBefore(detailRow, rowEl.nextSibling);
+}
+
+/* ------------------------------
+   Load invoice into main form (for view/edit)
+   ------------------------------ */
+function loadInvoiceIntoForm(invDescriptor, opts = { readOnly: false, asEdit: false }){
+  // invDescriptor may be {key, invoiceNo, client, date, totalAmount, netAmount, status, raw}
+  // raw likely contains full payload
+  const payload = invDescriptor.raw || invDescriptor;
+  if(!payload) {
+    alert("Unable to load invoice data.");
+    return;
+  }
+
+  // Set fields
+  document.getElementById("invoiceDate").value = payload.date || "";
+  document.getElementById("invoiceNo").value = payload.invoiceNo || payload.invoiceNo || generateInvoiceNo();
+  // party: ensure party present in partySelect options
+  const party = payload.party || payload.client || "";
+  const parties = [...new Set(ALL_TRANSACTIONS.map(t=>t.party).filter(Boolean))].sort();
+  if(party && partySelect){
+    if(!parties.includes(party)){
+      parties.push(party);
+      parties.sort();
+      partySelect.updateOptions(parties);
+    }
+    partySelect.setValue(party);
+  } else if(party && !partySelect){
+    document.querySelector('#partySelectWrapper .searchable-select-input').value = party;
+  }
+
+  // sellId
+  const sellId = payload.sellId || "";
+  if(sellId && sellIdSelect){
+    // ensure sell id exists in options
+    const sellIds = [...new Set(ALL_TRANSACTIONS.map(t=>t.sellId).filter(Boolean))].sort();
+    if(!sellIds.includes(sellId)){
+      sellIds.push(sellId);
+      sellIds.sort();
+      sellIdSelect.updateOptions(sellIds);
+    }
+    sellIdSelect.setValue(sellId);
+  }
+
+  // Commission fields
+  document.getElementById("commissionInput").value = payload.commissionInput || payload.commission || "";
+  document.getElementById("commissionSign").value = payload.commissionSign || payload.commissionType || "-";
+
+  // Status
+  if(payload.status){
+    document.getElementById("invoiceStatus").value = payload.status;
+  }
+
+  // Items
+  const items = payload.items || [];
+  CURRENT_FILTERED_TRANSACTIONS = items.map(it => ({
+    source: it.source || "",
+    lot: it.lot || "",
+    description: it.description || "",
+    shape: it.shape || [],
+    size: it.size || [],
+    grade: it.grade || "",
+    pcs: num(it.pcs || 0),
+    cts: num(it.cts || 0),
+    price: num(it.price || 0),
+    amount: num(it.amount || (num(it.cts||0) * num(it.price||0))),
+    remarks: it.remarks || "",
+    sellId: it.sellId || "",
+    date: it.date || ""
+  }));
+
+  populateTable(CURRENT_FILTERED_TRANSACTIONS);
+  calculateTotals(CURRENT_FILTERED_TRANSACTIONS);
+
+  // If editing requested, set editing flag and update UI
+  if(opts.asEdit){
+    EDITING_INVOICE_KEY = invDescriptor.key || invDescriptor.key || payload.key || null;
+    document.getElementById('saveInvoiceBtn').textContent = '🔁 UPDATE INVOICE';
+    document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+  } else {
+    // viewing only
+    EDITING_INVOICE_KEY = null;
+    document.getElementById('saveInvoiceBtn').textContent = '💾 SAVE INVOICE';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+  }
+}
+
+/* Cancel edit state (revert to new) */
+function clearEditState(){
+  EDITING_INVOICE_KEY = null;
+  document.getElementById('saveInvoiceBtn').textContent = '💾 SAVE INVOICE';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  // optionally reset some fields (we won't fully clear form, user can clear manually)
+}
+
+/* ------------------------------
+   Search/filter invoices in modal
+   ------------------------------ */
+function onInvoiceModalSearch(){
+  const q = (invoiceModalSearch.value || "").trim().toLowerCase();
+  if(!q){
+    renderInvoicesTable(INVOICES);
+    return;
+  }
+  const filtered = INVOICES.filter(i => {
+    const joined = [
+      i.invoiceNo || "",
+      i.client || "",
+      i.date || "",
+      i.status || ""
+    ].join(" ").toLowerCase();
+    return joined.indexOf(q) !== -1;
+  });
+  renderInvoicesTable(filtered);
+}
+
+/* ------------------------------
+   Print / UI and initialization
+   ------------------------------ */
+
+// Print function - sync values and open browser print dialog
+function executePrint(){
+  // Sync values from inputs to print spans
+  const dateInput = document.getElementById("invoiceDate");
+  document.getElementById("printDate").textContent = dateInput.value || "";
+  
+  const invoiceNoInput = document.getElementById("invoiceNo");
+  document.getElementById("printInvoiceNo").textContent = invoiceNoInput.value || "";
+  
+  // Get selected values from dropdowns
+  const txTypeInput = document.querySelector('#txTypeSelectWrapper .searchable-select-input');
+  document.getElementById("printTxType").textContent = txTypeInput ? (txTypeInput.value || "") : "";
+  
+  const partyInput = document.querySelector('#partySelectWrapper .searchable-select-input');
+  document.getElementById("printParty").textContent = partyInput ? (partyInput.value || "") : "";
+  
+  const sellIdInput = document.querySelector('#sellIdSelectWrapper .searchable-select-input');
+  document.getElementById("printSellId").textContent = sellIdInput ? (sellIdInput.value || "") : "";
+  
+  // Ensure totals/commission/net are up-to-date
+  calculateTotals(CURRENT_FILTERED_TRANSACTIONS || []);
+  
+  window.print();
+}
+
+// Loading overlay
+function showLoading(show){
+  document.getElementById("loadingOverlay").classList.toggle('active', show);
+}
+
+// Helper: generate invoice number
+function generateInvoiceNo(){
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const counter = String(INVOICE_COUNTER).padStart(4, '0');
+  return `INV-${year}${month}-${counter}`;
+}
+
+// Clear form
+function clearForm(){
+  if(partySelect) partySelect.reset();
+  if(txTypeSelect) txTypeSelect.reset();
+  if(sellIdSelect) sellIdSelect.reset();
+  document.getElementById("sourceFilter").value = "";
+  document.getElementById("dateFrom").value = "";
+  document.getElementById("dateTo").value = "";
+  document.getElementById("totalCTS").value = "0.00";
+  document.getElementById("totalAmount").value = "0.00";
+  document.getElementById("avgPrice").value = "0.00";
+
+  // Reset commission inputs
+  document.getElementById("commissionInput").value = "";
+  document.getElementById("commissionSign").value = "-";
+  document.getElementById("commissionValue").value = "0.00";
+  document.getElementById("netAmount").value = "0.00";
+
+  document.getElementById("invoiceStatus").value = "For Approval";
+  
+  // Set today's date
+  document.getElementById("invoiceDate").value = new Date().toISOString().split('T')[0];
+  
+  // Generate new invoice number
+  INVOICE_COUNTER++;
+  document.getElementById("invoiceNo").value = generateInvoiceNo();
+  
+  // Repopulate with all transactions (empty view)
+  populateTable([]);
+  CURRENT_FILTERED_TRANSACTIONS = [];
+  calculateTotals([]);
+  clearEditState();
+}
+
+/* ------------------------------
+   Event bindings & init
+   ------------------------------ */
+document.addEventListener("DOMContentLoaded", async () => {
+  // Set today's date
+  document.getElementById("invoiceDate").value = new Date().toISOString().split('T')[0];
+  
+  // Generate initial invoice number
+  document.getElementById("invoiceNo").value = generateInvoiceNo();
+  
+  // Load data
+  await loadAllData();
+  
+  // Initialize dropdowns
+  initializeDropdowns();
+  
+  // Populate initial table
+  populateTable([]);
+  CURRENT_FILTERED_TRANSACTIONS = [];
+  
+  // Bind event listeners
+  document.getElementById("clearBtn").addEventListener("click", clearForm);
+  document.getElementById("printBtn").addEventListener("click", executePrint);
+  document.getElementById("sourceFilter").addEventListener("change", filterTransactions);
+  document.getElementById("dateFrom").addEventListener("change", filterTransactions);
+  document.getElementById("dateTo").addEventListener("change", filterTransactions);
+
+  // Commission inputs listeners (recompute on changes)
+  const commissionInputEl = document.getElementById("commissionInput");
+  const commissionSignEl = document.getElementById("commissionSign");
+  commissionInputEl.addEventListener("input", () => calculateTotals(CURRENT_FILTERED_TRANSACTIONS || []));
+  commissionInputEl.addEventListener("blur", () => calculateTotals(CURRENT_FILTERED_TRANSACTIONS || []));
+  commissionSignEl.addEventListener("change", () => calculateTotals(CURRENT_FILTERED_TRANSACTIONS || []));
+
+  // Invoice modal handlers
+  viewInvoicesBtn.addEventListener('click', openInvoiceModal);
+  document.getElementById('closeInvoiceModalBtn').addEventListener('click', closeInvoiceModal);
+  document.getElementById('closeInvoiceModalFooterBtn').addEventListener('click', closeInvoiceModal);
+  invoiceModalOverlay.addEventListener('click', (ev) => {
+    // close when clicking outside modal content
+    if(ev.target === invoiceModalOverlay) closeInvoiceModal();
+  });
+  invoiceModalSearch.addEventListener('input', onInvoiceModalSearch);
+
+  // Save / Update / Cancel Edit buttons
+  document.getElementById('saveInvoiceBtn').addEventListener('click', async () => {
+    if(EDITING_INVOICE_KEY){
+      // update
+      await updateInvoice(EDITING_INVOICE_KEY);
+    } else {
+      await saveInvoice();
+    }
+  });
+  document.getElementById('cancelEditBtn').addEventListener('click', () => {
+    clearEditState();
+    alert('Edit cancelled. Form remains populated but changes will be saved as a new invoice unless you select Edit again.');
+  });
+
+});
+</script>
+
+</body>
+</html>
